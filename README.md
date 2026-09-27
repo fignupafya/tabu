@@ -33,8 +33,8 @@ Kurulum gerekmez; bilgisayarda da telefonda da çalışır.
 - **Kaldığın yerden devam:** Oyun tarayıcıda kayıtlı kalır. Oyun ortasında sayfa kapanır, telefon kilitlenir
   ya da başka uygulamaya geçersen sıra otomatik duraklar; döndüğünde kalan süreyle devam edersin.
 - **Kelime yönetimi:** Arayüzden kelime ekle/düzenle/sil, JSON dosyası içe/dışa aktar, komut satırı aracı.
-- **Telefona uygun:** Büyük butonlar, tam ekran, ekranın kararmaması (https'te), ses efektleri ve titreşim,
-  klavye kısayolları.
+- **Telefona uygun:** Büyük butonlar, tam ekran, ana ekrana eklenince uygulama gibi açılma, ekranın kararmaması
+  (https'te), ses efektleri ve titreşim, klavye kısayolları.
 - **İki çalışma şekli:** Sunucusuz statik site olarak (GitHub Pages) ya da kendi bilgisayarında/sunucunda.
   Ayrıntılar aşağıda, [Tarayıcı sürümü ve kendi sunucun](#tarayıcı-sürümü-ve-kendi-sunucun) bölümünde.
 
@@ -72,6 +72,18 @@ Tarayıcı sürümünde:
   Değişikliklerini saklamak ya da başka cihaza taşımak için *Dışa aktar* ile JSON dosyası alıp diğer tarafta
   *JSON içe aktar* yapabilirsin.
 - Repoya yeni kelime eklendiğinde site güncellenir ve yeni kelimeler senin değişikliklerinle birlikte görünür.
+
+### Ana ekrana ekle
+
+Siteyi telefonun ana ekranına eklersen uygulama gibi, adres çubuğu ve tarayıcı düğmeleri olmadan açılır:
+
+- **iPhone ve iPad (Safari):** Paylaş düğmesi → **Ana Ekrana Ekle**.
+- **Android (Chrome):** Sağ üstteki ⋮ menüsü → **Ana ekrana ekle** (ya da **Uygulamayı yükle**).
+
+iPhone'da ana ekrandaki uygulama Safari'den ayrı kayıt tutar: Safari'de kalan oyun, kelime değişiklikleri ve
+çıkanlar listesi (tarayıcı sürümünde) uygulamada görünmez; oyunu hep aynı yerden açman yeterli. Android'de
+çubuksuz açılış için site https olmalı: GitHub Pages sürümünde çalışır, kendi bilgisayarındaki sunucuyu
+`http://` ile açtığında sadece kısayol eklenir.
 
 ## Kurulum ve açma
 
@@ -309,5 +321,6 @@ alınır; elle derlerken `PAGES_BASE_PATH=/tabu npm run build:static` kullan.
   (herkesin değişiklikleri kendi cihazında kalır) ya da bir veritabanı adaptörü yaz.
 - Ekranın kararmasını engelleme özelliği tarayıcılarda sadece güvenli bağlantıda (https ya da localhost) çalışır.
 - Tam ekran düğmesi iPhone'da görünmez: Safari, iPhone'da sayfaların tam ekran açılmasına izin vermiyor.
-  Android'de, iPad'de ve bilgisayarda çalışır.
+  Android'de, iPad'de ve bilgisayarda çalışır. iPhone'da çubuksuz oynamak için siteyi
+  [ana ekrana ekle](#ana-ekrana-ekle).
 - Tailwind CSS 4 kullanıldığı için modern tarayıcı gerekir (iOS 16.4+, Chrome 111+).

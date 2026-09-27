@@ -77,6 +77,9 @@ Rules that keep both builds working:
 - `next.config.ts` always defines `NEXT_PUBLIC_STATIC_EXPORT`, so `lib/backend/index.ts`'s check is a build-time
   constant and the lazily imported local backend (zod, the bundled word list) is dropped from server-mode bundles.
 - No hard-coded `/…` URLs: use `next/link` / the router, which add the base path.
+- `src/app/manifest.json` (the home screen app: standalone, no browser bars) uses URLs relative to itself, so it
+  works under any base path. Its PNG icons (`public/icons/`, `src/app/apple-icon.png`) are rendered from
+  `src/app/icon.svg`; the apple and maskable ones are full-bleed (no rounded corners, no transparency).
 - Try a static build locally with `PAGES_BASE_PATH=/tabu npm run build:static` and serve `out/` under `/tabu/`.
   In Git Bash, MSYS rewrites values starting with `/` into Windows paths; set the variable in PowerShell instead
   (`$env:PAGES_BASE_PATH='/tabu'`). Next.js 16.3 on Windows writes the route segment prefetch files into nested

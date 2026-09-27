@@ -7,6 +7,8 @@ const nunito = Nunito({ subsets: ['latin', 'latin-ext'], variable: '--font-nunit
 export const metadata: Metadata = {
   title: { default: 'Tabu', template: '%s · Tabu' },
   description: 'Kendi kelimelerinle oynayabileceğin, takım ve skor takipli Türkçe Tabu oyunu.',
+  // "Add to Home Screen" opens the game like an app, without the browser bars (with manifest.json).
+  appleWebApp: { capable: true, title: 'Tabu', statusBarStyle: 'default' },
 };
 
 export const viewport: Viewport = {
