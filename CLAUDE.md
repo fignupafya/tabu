@@ -10,28 +10,35 @@ UI text and docs for the user are Turkish; code, identifiers and comments are En
 - `npm run dev` — http://localhost:3000 (phones on the same Wi-Fi: the "Network" URL it prints)
 - `npm test` (Vitest, `src/**/*.test.ts`) · `npm run typecheck` · `npm run lint` · `npm run build`
 - `npm run -s words -- <command>` — word store CLI, see below
-- `npm run screenshots` — regenerates `docs/screenshots/*.png` for the README (needs a running server; use a
-  production build, `BASE_URL=http://localhost:3100`, so the dev indicator isn't in the images)
+- `npm run screenshots` — regenerates `docs/screenshots/*.png` for the README by playing a game. Run it against a
+  production build started with a scratch played list, so the dev indicator isn't in the images and the user's
+  real list stays untouched: `PLAYED_FILE=<scratch>/played.json npx next start -p 3100`, then
+  `BASE_URL=http://localhost:3100 npm run screenshots`
 
 ## Architecture (ports & adapters)
 
 ```
 src/core/           framework-free domain, shared by app, API and CLI (no React/Next, relative imports only)
-  words/            WordEntry model, difficulty levels, zod schema, file format, WordService, WordRepository port
+  words/            WordEntry model, difficulty levels, zod schema, file format, WordService,
+                    WordRepository + PlayedWordRepository ports
   game/             pure engine (gameReducer), scoring, setup, GameStorage port
-src/adapters/       port implementations
-  words/            json-file (data/words.json), in-memory (tests), create-word-repository (picks one via WORD_STORE)
+src/adapters/       port implementations; create-repositories.ts picks them (WORD_STORE, WORDS_FILE, PLAYED_FILE)
+  json-file.ts      shared JSON document helper: mtime-cached reads, serialized atomic writes
+  words/            JSON file adapters (data/words.json, data/played.json), in-memory adapters (tests)
   storage/          localStorage GameStorage
 src/server/         server composition root (getWordService) + HTTP helpers
 src/app/api/        thin REST handlers: parse request → WordService → JSON
 src/lib/            client: api-client (only place the UI talks HTTP), game-store (useSyncExternalStore), sound, hooks
-src/components/     UI: setup/, game/, words/, ui/
-scripts/words.ts    word CLI (same WordService as the app)
+src/components/     UI: setup/, game/, words/, played/, ui/
+scripts/            words.ts (word CLI, same WordService as the app), screenshots.ts (README images)
 ```
 
 - Keep zod out of client bundles: client code may import `core/words/{word,word-query,difficulty,word-import}.ts`;
   `word-schema`, `word-file`, `word-service` are server/CLI only (type-only imports are fine).
-- New word store (SQLite, Postgres, remote API…): implement `WordRepository`, add a case to `create-word-repository.ts`.
+- New store (SQLite, Postgres, remote API…): implement both ports, add a case to `create-repositories.ts`.
+- Played words: every card of a committed turn counts. `GameView` posts all of the game's card ids after each
+  committed turn (idempotent, so a lost request is repaired by the next one); decks leave them out unless the
+  setup's `includePlayed` is on. `data/played.json` is per-install state and gitignored.
 - Game rules live in `gameReducer` (pure: time and randomness come in via actions and the seeded state) — test them in `engine.test.ts`.
 - The turn clock is wall-clock based (`endsAt`), so `TurnPlay` pauses it whenever the player leaves (page hidden or
   closed, in-app navigation). Keep that when touching the timer, or time keeps running while nobody is looking.
@@ -48,7 +55,7 @@ scripts/words.ts    word CLI (same WordService as the app)
 
 ## Working with words — do NOT read data/words.json
 
-The file is large (~500 words, ~4000 lines). Use the CLI instead:
+The file is large (~950 words, ~8500 lines). Use the CLI instead:
 
 | Need | Command |
 | --- | --- |
@@ -59,6 +66,7 @@ The file is large (~500 words, ~4000 lines). Use the CLI instead:
 | Validate the file (after hand edits too) | `check` |
 | Add words from a file | `add <file.json> --dry-run`, then without `--dry-run` (`--strategy skip\|merge\|replace`, default skip) |
 | Delete | `remove "Kelime" ...` |
+| Words that came up in games | `played` (`--inline` for one line) |
 
 ### When the user asks for new words
 

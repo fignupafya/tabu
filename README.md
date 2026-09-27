@@ -21,6 +21,9 @@
 - **Birikimli zorluk:** Her kelimenin yasaklıları seviyelere ayrılır. Kolay modda en bariz 3 yasaklı,
   Orta modda 5, Zor modda 7 yasaklı kelime çıkar.
 - **Kategoriler:** Bir kelime birden fazla kategoride olabilir; oyun için istediğin kadar kategori seçebilirsin.
+- **Çıkan kelimeler tekrar gelmez:** Oyunda çıkan her kelime kaydedilir ve sonraki oyunlarda desteye girmez.
+  Oyun kurarken istersen çıkanları da dahil edebilirsin; *Çıkanlar* sayfasında listeyi görür, kelimeleri tek tek
+  geri alır ya da listeyi temizlersin.
 - **Oyun akışı:** Süre, tur sayısı ve pas hakkı ayarlanabilir. Geri al, duraklat, sırayı erken bitir var.
   Süre bitince özet ekranında son saniyede bilinen kartı düzeltebilirsin.
 - **Kaldığın yerden devam:** Oyun tarayıcıda kayıtlı kalır. Oyun ortasında sayfa kapanır, telefon kilitlenir
@@ -37,6 +40,10 @@
 | Kelimeler | JSON içe aktarma |
 | --- | --- |
 | <img src="docs/screenshots/words.png" alt="Kelime listesi, arama ve kategori filtresi"> | <img src="docs/screenshots/import.png" alt="İçe aktarma önizlemesi"> |
+
+| Çıkan kelimeler |
+| --- |
+| <img src="docs/screenshots/played.png" width="640" alt="Oyunlarda çıkan kelimelerin listesi"> |
 
 ## Kurulum ve açma
 
@@ -121,7 +128,8 @@ npm run build
 ```
 
 Kendi eklediğin kelimeler `data/words.json` dosyasında durur ve `git pull` bu dosyada çakışma verebilir.
-Güncellemeden önce *Kelimeler → Dışa aktar* ile yedek almak en güvenlisi.
+Güncellemeden önce *Kelimeler → Dışa aktar* ile yedek almak en güvenlisi. Çıkan kelimeler listesi
+(`data/played.json`) git'te tutulmaz, güncelleme ona dokunmaz.
 
 ### Sorun giderme
 
@@ -172,6 +180,16 @@ Kelimeler [`data/words.json`](data/words.json) dosyasında durur:
   (`Kır` ≠ `Kir`).
 - VS Code, dosyadaki `$schema` sayesinde alanları otomatik tamamlar ve hataları gösterir.
 
+### Çıkan kelimeler
+
+- Bir sıra onaylandığında o sırada ekrana gelen bütün kartlar (doğru, tabu, pas ve süre bittiğinde ekranda kalan)
+  çıkmış sayılır ve `data/played.json` dosyasına kaydedilir. Kayıt sunucuda tutulur; telefonda oynayıp listeye
+  bilgisayardan bakabilirsin.
+- Yeni oyun kurarken **Daha önce çıkan kelimeleri de dahil et** seçili değilse bu kelimeler desteye girmez;
+  kurulum ekranındaki kelime sayısı buna göre hesaplanır.
+- *Çıkanlar* sayfasında listeyi görür, arar, bir kelimeyi **Listeden çıkar** ile tekrar oyuna katar ya da
+  **Listeyi temizle** ile her şeyi sıfırlarsın. Bir kelimeyi silince listeden de çıkar.
+
 ### Kelime eklemenin üç yolu
 
 1. **Arayüz:** *Kelimeler* sayfasında "Yeni kelime" formu ya da "JSON içe aktar". İçe aktarmadan önce
@@ -193,6 +211,7 @@ Kelimeler [`data/words.json`](data/words.json) dosyasında durur:
 | `npm run -s words -- check` | Dosyayı doğrular: hatalar, tekrarlar, kalite uyarıları |
 | `npm run -s words -- add dosya.json` | Ekler (`--strategy skip\|merge\|replace`, `--dry-run`) |
 | `npm run -s words -- remove Kelime` | Siler |
+| `npm run -s words -- played` | Oyunlarda çıkmış kelimeler, en yeniden eskiye (`--inline`) |
 | `npm run -s words -- schema` | Editör desteği için `data/words.schema.json` üretir |
 
 ## Mimari
@@ -202,34 +221,41 @@ yapı **ports & adapters** (adaptör) tasarımında: oyun kuralları ve kelime i
 `src/core` içinde, depolama gibi dış dünyaya dokunan her şey bir arayüzün arkasında ve değiştirilebilir.
 
 ```
-src/core/words      kelime modeli, zorluk seviyeleri, doğrulama, WordService, WordRepository (port)
+src/core/words      kelime modeli, zorluk seviyeleri, doğrulama, WordService,
+                    WordRepository ve PlayedWordRepository (portlar)
 src/core/game       saf oyun motoru (gameReducer), puanlama, kurulum, GameStorage (port)
-src/adapters        JsonFileWordRepository, InMemoryWordRepository, LocalStorageGameStorage
-src/server          sunucu tarafı kompozisyon noktası: hangi adaptörün kullanılacağı
+src/adapters        JSON dosya adaptörleri (kelimeler, çıkan kelimeler), bellek içi adaptörler (testler),
+                    LocalStorageGameStorage, create-repositories.ts (hangi adaptörün kullanılacağı)
+src/server          sunucu tarafı kompozisyon noktası
 src/app/api         REST uç noktaları
-src/app, components arayüz: kurulum, oyun, kelimeler
+src/app, components arayüz: kurulum, oyun, kelimeler, çıkan kelimeler
 scripts/            kelime aracı (words.ts), README ekran görüntüleri (screenshots.ts)
 ```
 
 - Oyun motoru saf bir reducer'dır: zaman ve rastgelelik dışarıdan gelir. Bu yüzden kolay test edilir ve
   ileride çok cihazlı oyun için aynen sunucuda çalışabilir.
-- **Veritabanına geçmek** için `WordRepository` arayüzünü uygulayan bir adaptör yazıp
-  `src/adapters/words/create-word-repository.ts` içine eklemek yeterli; `WORD_STORE` ortam değişkeniyle seçilir.
+- **Veritabanına geçmek** için portları uygulayan adaptörler yazıp `src/adapters/create-repositories.ts`
+  içine eklemek yeterli; `WORD_STORE` ortam değişkeniyle seçilir. JSON dosyalarının yeri `WORDS_FILE` ve
+  `PLAYED_FILE` ile değiştirilebilir.
 - **Yeni zorluk seviyesi** eklemek için `src/core/words/difficulty.ts` içindeki listeye eklemek yeterli.
 
 **API:** `GET /api/words?search=&tags=` · `POST /api/words` · `GET|PUT|DELETE /api/words/:kelime` ·
 `POST /api/words/import` (`{ data, strategy, dryRun }`) · `GET /api/words/export` · `GET /api/tags` ·
-`GET /api/deck?difficulty=medium&tags=yemek,spor`
+`GET /api/deck?difficulty=medium&tags=yemek,spor&includePlayed=0` · `GET|POST|DELETE /api/played`
+(`POST` gövdesi `{ ids }`) · `DELETE /api/played/:kelime`
 
 ## Geliştirme
 
 ```bash
-npm test               # birim testleri (oyun motoru, kelime servisi, doğrulama)
+npm test               # birim testleri (oyun motoru, kelime servisi, JSON adaptörleri, doğrulama)
 npm run typecheck
 npm run lint
 npm run build
 npm run screenshots    # README görsellerini yeniden üretir (sunucu açıkken, yüklü Chrome/Edge ile)
 ```
+
+`npm run screenshots` görüntü almak için gerçek bir oyun oynar; o oyunun kelimeleri çıkan kelimelere
+yazılmasın diye sunucuyu geçici bir dosyayla başlat (ör. `PLAYED_FILE=/tmp/played.json npm start`).
 
 ## Bilinmesi gerekenler
 

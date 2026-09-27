@@ -8,6 +8,7 @@ import { Logo } from './ui/logo';
 const LINKS = [
   { href: '/', label: 'Oyun' },
   { href: '/words', label: 'Kelimeler' },
+  { href: '/played', label: 'Çıkanlar' },
 ] as const;
 
 export function SiteHeader() {
@@ -27,7 +28,7 @@ export function SiteHeader() {
                 href={link.href}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'rounded-lg px-3 py-1.5 text-sm font-bold transition',
+                  'rounded-lg px-2.5 py-1.5 text-sm font-bold transition sm:px-3',
                   active
                     ? 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300'
                     : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800',

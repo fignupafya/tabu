@@ -1,13 +1,13 @@
 /**
  * Word store CLI: inspect and change the words without opening the (large) JSON file.
- * Uses the same WordService and storage adapter as the app (WORD_STORE / WORDS_FILE env vars).
+ * Uses the same WordService and storage adapters as the app (WORD_STORE / WORDS_FILE / PLAYED_FILE env vars).
  *
  * Run `npm run -s words -- help` for the command list.
  */
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
-import { DEFAULT_WORDS_FILE, createWordRepository } from '../src/adapters/words/create-word-repository';
+import { DEFAULT_WORDS_FILE, createRepositories } from '../src/adapters/create-repositories';
 import { DIFFICULTY_LEVELS, levelsUpTo } from '../src/core/words/difficulty';
 import { normalizeText, wordId, type WordEntry } from '../src/core/words/word';
 import { extractEntries, formatEntry, rawWordOf, wordFileJsonSchema } from '../src/core/words/word-file';
@@ -32,6 +32,7 @@ Kullanım: npm run -s words -- <komut> [seçenekler]
       --strategy <s>      Var olan kelimeler için: skip (varsayılan) | merge | replace
       --dry-run           Değişiklikleri yazmadan sadece raporlar
   remove <kelime...>    Kelimeleri siler
+  played                Oyunlarda çıkmış kelimeler, en yeniden eskiye (--inline: tek satır)
   schema                Editör desteği için words.schema.json dosyasını üretir`;
 
 const wordsFile = process.env.WORDS_FILE ? path.resolve(process.env.WORDS_FILE) : DEFAULT_WORDS_FILE;
@@ -49,7 +50,8 @@ async function main(): Promise<void> {
     },
   });
   const [command, ...args] = positionals;
-  const service = new WordService(createWordRepository());
+  const { words, played } = createRepositories();
+  const service = new WordService(words, played);
   const tags = values.tag?.flatMap((value) => value.split(',')).map(normalizeText).filter(Boolean);
 
   switch (command) {
@@ -67,6 +69,8 @@ async function main(): Promise<void> {
       return add(service, args, parseStrategy(values.strategy), values['dry-run'] ?? false);
     case 'remove':
       return remove(service, args);
+    case 'played':
+      return printPlayed(service, values.inline);
     case 'schema':
       return schema();
     default:
@@ -242,6 +246,13 @@ async function remove(service: WordService, names: string[]): Promise<void> {
       process.exitCode = 1;
     }
   }
+}
+
+async function printPlayed(service: WordService, inline = false): Promise<void> {
+  const played = await service.listPlayed();
+  if (inline) console.log(played.map((entry) => entry.word).join(', '));
+  else for (const entry of played) console.log(`${entry.word}  (${entry.playedAt.slice(0, 16).replace('T', ' ')})`);
+  console.error(`(${played.length} çıkmış kelime)`);
 }
 
 async function schema(): Promise<void> {

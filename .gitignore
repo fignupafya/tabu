@@ -42,3 +42,6 @@ next-env.d.ts
 
 # leftovers of interrupted atomic writes to the word store
 /data/*.tmp
+
+# games played on this installation (per-install state, not content)
+/data/played.json

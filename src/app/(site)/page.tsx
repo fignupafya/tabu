@@ -4,7 +4,7 @@ import { Rules } from '@/components/setup/rules';
 import { GameSetupPanel, type DeckInfo } from '@/components/setup/setup-form';
 import { buttonClasses } from '@/components/ui/button';
 import { DIFFICULTY_LEVELS, type DifficultyLevel } from '@/core/words/difficulty';
-import { tabooWordsFor } from '@/core/words/word';
+import { tabooWordsFor, wordId } from '@/core/words/word';
 import { countTags } from '@/core/words/word-query';
 import { getWordService } from '@/server/word-service';
 
@@ -12,11 +12,13 @@ import { getWordService } from '@/server/word-service';
 export const dynamic = 'force-dynamic';
 
 export default async function HomePage() {
-  const words = await getWordService().listWords();
+  const service = getWordService();
+  const [words, played] = await Promise.all([service.listWords(), service.listPlayed()]);
+  const playedIds = new Set(played.map((word) => word.id));
   const average = (values: number[]) => (values.length ? values.reduce((a, b) => a + b, 0) / values.length : 0);
   const deck: DeckInfo = {
     tags: countTags(words),
-    wordTags: words.map((entry) => entry.tags),
+    words: words.map((entry) => ({ tags: entry.tags, played: playedIds.has(wordId(entry.word)) })),
     tabooAverages: Object.fromEntries(
       DIFFICULTY_LEVELS.map((level) => [level, average(words.map((entry) => tabooWordsFor(entry, level).length))]),
     ) as Record<DifficultyLevel, number>,

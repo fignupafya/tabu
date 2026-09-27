@@ -2,8 +2,9 @@
 
 import { Flag, Volume2, VolumeX } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useEffectEvent, useState } from 'react';
 import type { GameState } from '@/core/game/types';
+import { api } from '@/lib/api-client';
 import { gameStorage, gameStore, useGame } from '@/lib/game-store';
 import { setMuted } from '@/lib/sound';
 import { buttonClasses, IconButton } from '../ui/button';
@@ -34,6 +35,18 @@ export function GameScreen() {
   return <GameView game={game} />;
 }
 
+/**
+ * Records the words of committed turns as played, so new games leave them out. Sends every word of the game
+ * each time (the endpoint is idempotent): a request lost while offline is repaired by the next one.
+ */
+function useReportPlayedWords(game: GameState): void {
+  const report = useEffectEvent(() => {
+    const ids = [...new Set(game.history.flatMap((turn) => turn.cards.map((card) => card.cardId)))];
+    if (ids.length > 0) api.markPlayed(ids).catch(() => undefined);
+  });
+  useEffect(() => report(), [game.id, game.history.length]);
+}
+
 function GameView({ game }: { game: GameState }) {
   const [muted, setMutedState] = useState(() => {
     const { muted: saved } = gameStorage.loadPreferences();
@@ -41,6 +54,7 @@ function GameView({ game }: { game: GameState }) {
     return saved;
   });
   const { phase } = game;
+  useReportPlayedWords(game);
 
   const toggleSound = () => {
     const next = !muted;

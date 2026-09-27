@@ -28,6 +28,8 @@ export interface GameSettings {
   difficulty: DifficultyLevel;
   /** Categories the deck was built from (empty = all words). */
   tags: string[];
+  /** Whether words that came up in earlier games could be dealt again. */
+  includePlayed: boolean;
 }
 
 export interface PlayedCard {

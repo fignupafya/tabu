@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { InMemoryPlayedWordRepository } from '../../adapters/words/in-memory-played-word-repository';
 import { InMemoryWordRepository } from '../../adapters/words/in-memory-word-repository';
 import type { WordEntry } from './word';
 import { WordService, WordServiceError } from './word-service';
@@ -14,7 +15,7 @@ const kedi: WordEntry = {
   taboo: { easy: ['miyav', 'fare'], medium: ['tüy'], hard: [] },
 };
 
-const setup = () => new WordService(new InMemoryWordRepository([cay, kedi]));
+const setup = () => new WordService(new InMemoryWordRepository([cay, kedi]), new InMemoryPlayedWordRepository());
 
 describe('WordService.importWords', () => {
   it('adds new words, skips existing ones by default and reports invalid entries', async () => {
@@ -107,5 +108,41 @@ describe('WordService single word operations', () => {
 
   it('reports validation errors', async () => {
     await expect(setup().createWord({ word: 'X', taboo: { easy: [] } })).rejects.toMatchObject({ code: 'invalid' });
+  });
+});
+
+describe('WordService played words', () => {
+  it('records known words once, keeping the first date and the display form', async () => {
+    const service = setup();
+    await service.markPlayed(['çay', 'yok böyle'], new Date('2026-01-01T10:00:00Z'));
+    await service.markPlayed(['ÇAY', 'kedi'], new Date('2026-01-02T10:00:00Z'));
+    expect(await service.listPlayed()).toEqual([
+      { id: 'kedi', word: 'Kedi', playedAt: '2026-01-02T10:00:00.000Z' },
+      { id: 'çay', word: 'Çay', playedAt: '2026-01-01T10:00:00.000Z' },
+    ]);
+  });
+
+  it('leaves played words out of new decks unless they are included', async () => {
+    const service = setup();
+    await service.markPlayed(['çay']);
+    expect((await service.buildDeck({ difficulty: 'easy', includePlayed: false })).map((card) => card.id)).toEqual([
+      'kedi',
+    ]);
+    expect(await service.buildDeck({ difficulty: 'easy', includePlayed: true })).toHaveLength(2);
+    expect(await service.buildDeck({ difficulty: 'easy' })).toHaveLength(2);
+  });
+
+  it('forgets single words, everything, and words that get deleted', async () => {
+    const service = setup();
+    await service.markPlayed(['çay', 'kedi']);
+    await service.unmarkPlayed(['Kedi']);
+    expect((await service.listPlayed()).map((word) => word.id)).toEqual(['çay']);
+
+    await service.deleteWord('çay');
+    expect(await service.listPlayed()).toEqual([]);
+
+    await service.markPlayed(['kedi']);
+    await service.clearPlayed();
+    expect(await service.listPlayed()).toEqual([]);
   });
 });

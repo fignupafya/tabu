@@ -1,6 +1,7 @@
 'use client';
 
 import { Minus, Play, Plus } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useMemo, useState, type ReactNode } from 'react';
 import { SETUP_LIMITS, createGame, validateSetup, type GameSetup, type TeamSetup } from '@/core/game/setup';
@@ -19,8 +20,8 @@ import { TeamCard } from './team-card';
 
 export interface DeckInfo {
   tags: TagCount[];
-  /** Tags of every word, to size the deck for any category selection. */
-  wordTags: string[][];
+  /** Every word's tags and whether it already came up, to size the deck for any selection. */
+  words: { tags: string[]; played: boolean }[];
   /** Average number of taboo words per card at each level. */
   tabooAverages: Record<DifficultyLevel, number>;
 }
@@ -34,7 +35,7 @@ const SECONDS_BETWEEN_TURNS = 25;
 function defaultSetup(): GameSetup {
   return {
     teams: DEFAULT_TEAM_NAMES.slice(0, 2).map((name) => ({ name, players: ['', ''] })),
-    settings: { turnSeconds: 60, rounds: 4, passLimit: 3, difficulty: 'medium', tags: [] },
+    settings: { turnSeconds: 60, rounds: 4, passLimit: 3, difficulty: 'medium', tags: [], includePlayed: false },
   };
 }
 
@@ -54,6 +55,7 @@ function restoreSetup(saved: GameSetup | null, knownTags: Set<string>): GameSetu
       passLimit: PASS_LIMITS.includes(settings.passLimit) ? settings.passLimit : fallback.settings.passLimit,
       difficulty: isDifficultyLevel(settings.difficulty) ? settings.difficulty : fallback.settings.difficulty,
       tags: Array.isArray(settings.tags) ? settings.tags.filter((tag) => knownTags.has(tag)) : [],
+      includePlayed: settings.includePlayed === true,
     },
   };
 }
@@ -79,13 +81,14 @@ function SetupForm({ deck }: { deck: DeckInfo }) {
   const [starting, setStarting] = useState(false);
   const { teams, settings } = setup;
 
-  const deckSize = useMemo(
-    () =>
-      settings.tags.length === 0
-        ? deck.wordTags.length
-        : deck.wordTags.filter((tags) => tags.some((tag) => settings.tags.includes(tag))).length,
-    [deck.wordTags, settings.tags],
-  );
+  const { deckSize, playedInSelection } = useMemo(() => {
+    const selected = deck.words.filter(
+      (word) => settings.tags.length === 0 || word.tags.some((tag) => settings.tags.includes(tag)),
+    );
+    const played = selected.filter((word) => word.played).length;
+    return { deckSize: settings.includePlayed ? selected.length : selected.length - played, playedInSelection: played };
+  }, [deck.words, settings.tags, settings.includePlayed]);
+  const playedTotal = deck.words.filter((word) => word.played).length;
   const totalTurns = settings.rounds * teams.length;
   const expectedCards = Math.round((totalTurns * settings.turnSeconds) / SECONDS_PER_CARD);
   const minutes = Math.round((totalTurns * (settings.turnSeconds + SECONDS_BETWEEN_TURNS)) / 60);
@@ -112,7 +115,13 @@ function SetupForm({ deck }: { deck: DeckInfo }) {
 
   async function start() {
     const problems = validateSetup(setup);
-    if (deckSize === 0) problems.push('Seçilen kategorilerde kelime yok');
+    if (deckSize === 0) {
+      problems.push(
+        playedInSelection > 0
+          ? 'Seçilen kategorilerdeki bütün kelimeler daha önce çıktı: çıkanları dahil et ya da Çıkanlar sayfasından listeyi temizle'
+          : 'Seçilen kategorilerde kelime yok',
+      );
+    }
     setErrors(problems);
     if (problems.length > 0) return;
 
@@ -123,7 +132,11 @@ function SetupForm({ deck }: { deck: DeckInfo }) {
 
     setStarting(true);
     try {
-      const cards = await api.deck({ difficulty: settings.difficulty, tags: settings.tags });
+      const cards = await api.deck({
+        difficulty: settings.difficulty,
+        tags: settings.tags,
+        includePlayed: settings.includePlayed,
+      });
       gameStore.start(createGame(setup, cards, { id: randomId(), now: Date.now(), seed: randomSeed() }));
       gameStorage.saveSetup(setup);
       router.push('/play');
@@ -229,7 +242,7 @@ function SetupForm({ deck }: { deck: DeckInfo }) {
           <TagChip
             selected={settings.tags.length === 0}
             onClick={() => updateSettings({ tags: [] })}
-            count={deck.wordTags.length}
+            count={deck.words.length}
           >
             Tümü
           </TagChip>
@@ -252,6 +265,28 @@ function SetupForm({ deck }: { deck: DeckInfo }) {
             </button>
           </p>
         )}
+
+        <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+          <input
+            type="checkbox"
+            checked={settings.includePlayed}
+            onChange={(event) => updateSettings({ includePlayed: event.target.checked })}
+            className="mt-0.5 size-5 shrink-0 accent-violet-600"
+          />
+          <span className="text-sm">
+            <span className="block font-bold">Daha önce çıkan kelimeleri de dahil et</span>
+            <span className="mt-0.5 block text-slate-500 dark:text-slate-400">
+              {playedTotal === 0
+                ? 'Henüz çıkan kelime yok; oynadıkça çıkan kelimeler kaydedilir ve yeni oyunlarda tekrar gelmez.'
+                : settings.includePlayed
+                  ? `Önceki oyunlarda çıkan ${playedTotal} kelime de desteye girer.`
+                  : `Önceki oyunlarda çıkan ${playedTotal} kelime desteye alınmaz.`}{' '}
+              <Link href="/played" className="font-bold text-violet-600 hover:underline dark:text-violet-400">
+                Çıkan kelimeler
+              </Link>
+            </span>
+          </span>
+        </label>
       </Section>
 
       <div className="sticky bottom-0 z-10 -mx-4 border-t border-slate-200 bg-slate-50/90 px-4 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90">

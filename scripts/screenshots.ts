@@ -5,7 +5,8 @@
  *   npm run screenshots
  *
  * Uses the locally installed Chrome/Edge through puppeteer-core (CHROME_PATH overrides the path,
- * BASE_URL the server). Plays in a fresh browser profile, so saved games on your browser are untouched.
+ * BASE_URL the server). Plays in a fresh browser profile, so saved games on your browser are untouched —
+ * but the server records the game's words as played: start it with PLAYED_FILE pointing to a scratch file.
  */
 import { existsSync } from 'node:fs';
 import { mkdir } from 'node:fs/promises';
@@ -118,8 +119,13 @@ async function main(): Promise<void> {
     await page.evaluate(() => document.querySelectorAll('details').forEach((d) => (d.open = true)));
     await shot(page, 'summary', true);
 
-    // Word management (desktop)
+    // Words that came up in the game above (desktop)
     await page.setViewport(DESKTOP);
+    await sleep(500);
+    await page.goto(`${BASE_URL}/played`, { waitUntil: 'networkidle0' });
+    await shot(page, 'played');
+
+    // Word management (desktop)
     await page.goto(`${BASE_URL}/words`, { waitUntil: 'networkidle0' });
     await clickText(page, 'button[aria-pressed]', 'mitoloji');
     await clickText(page, 'button[aria-pressed]', 'uzay');

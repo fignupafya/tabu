@@ -1,4 +1,5 @@
 import type { DifficultyLevel } from './difficulty';
+import type { PlayedWord, PlayedWordRepository } from './played-word-repository';
 import { mergeEntries, sameEntry, toCard, wordId, type Card, type WordEntry } from './word';
 import { extractEntries, rawWordOf } from './word-file';
 import type { ImportOptions, ImportReport } from './word-import';
@@ -22,9 +23,12 @@ export class WordServiceError extends Error {
   }
 }
 
-/** Use cases around words. Storage-agnostic: works with any WordRepository adapter. */
+/** Use cases around words. Storage-agnostic: works with any adapters of the two ports. */
 export class WordService {
-  constructor(private readonly repository: WordRepository) {}
+  constructor(
+    private readonly repository: WordRepository,
+    private readonly played: PlayedWordRepository,
+  ) {}
 
   listWords(query?: WordQuery): Promise<WordEntry[]> {
     return this.repository.list(query);
@@ -40,10 +44,39 @@ export class WordService {
     return entry;
   }
 
-  /** Cards for a game: words having any of `tags` (all words when empty), taboo resolved for `difficulty`. */
-  async buildDeck(options: { difficulty: DifficultyLevel; tags?: string[] }): Promise<Card[]> {
-    const entries = await this.repository.list({ tags: options.tags });
-    return entries.map((entry) => toCard(entry, options.difficulty));
+  /**
+   * Cards for a game: words having any of `tags` (all words when empty), taboo resolved for `difficulty`.
+   * Words that already came up in earlier games are left out unless `includePlayed` is true (the default).
+   */
+  async buildDeck(options: { difficulty: DifficultyLevel; tags?: string[]; includePlayed?: boolean }): Promise<Card[]> {
+    const [entries, played] = await Promise.all([
+      this.repository.list({ tags: options.tags }),
+      options.includePlayed === false ? this.played.list() : [],
+    ]);
+    const playedIds = new Set(played.map((word) => word.id));
+    return entries
+      .filter((entry) => !playedIds.has(wordId(entry.word)))
+      .map((entry) => toCard(entry, options.difficulty));
+  }
+
+  listPlayed(): Promise<PlayedWord[]> {
+    return this.played.list();
+  }
+
+  /** Records words that came up in a game. Unknown ids are ignored; already played words keep their date. */
+  async markPlayed(ids: string[], at = new Date()): Promise<void> {
+    const found = await this.repository.getMany([...new Set(ids.map(wordId))]);
+    const playedAt = at.toISOString();
+    await this.played.add([...found].map(([id, entry]) => ({ id, word: entry.word, playedAt })));
+  }
+
+  /** Lets these words come up in games again. */
+  unmarkPlayed(ids: string[]): Promise<void> {
+    return this.played.remove(ids.map(wordId));
+  }
+
+  clearPlayed(): Promise<void> {
+    return this.played.clear();
   }
 
   /**
@@ -144,6 +177,7 @@ export class WordService {
       throw new WordServiceError('not_found', 'Kelime bulunamadı');
     }
     await this.repository.saveChanges({ remove: [id] });
+    await this.played.remove([id]);
   }
 
   private parse(input: unknown): SavedWord {

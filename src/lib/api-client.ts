@@ -32,10 +32,24 @@ const wordUrl = (id: string) => `/api/words/${encodeURIComponent(id)}`;
 
 /** Typed client for the backend API — the only place the UI talks HTTP. */
 export const api = {
-  async deck(options: { difficulty: DifficultyLevel; tags: string[] }): Promise<Card[]> {
+  async deck(options: { difficulty: DifficultyLevel; tags: string[]; includePlayed: boolean }): Promise<Card[]> {
     const params = new URLSearchParams({ difficulty: options.difficulty });
     if (options.tags.length > 0) params.set('tags', options.tags.join(','));
+    if (!options.includePlayed) params.set('includePlayed', '0');
     return (await request<{ cards: Card[] }>(`/api/deck?${params}`)).cards;
+  },
+
+  /** Idempotent: sending words that are already recorded is harmless. */
+  markPlayed(ids: string[]): Promise<void> {
+    return request('/api/played', { method: 'POST', body: JSON.stringify({ ids }) });
+  },
+
+  unmarkPlayed(id: string): Promise<void> {
+    return request(`/api/played/${encodeURIComponent(id)}`, { method: 'DELETE' });
+  },
+
+  clearPlayed(): Promise<void> {
+    return request('/api/played', { method: 'DELETE' });
   },
 
   importWords(data: unknown, options: { strategy: MergeStrategy; dryRun: boolean }): Promise<ImportReport> {
