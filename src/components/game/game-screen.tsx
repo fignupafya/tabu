@@ -8,6 +8,7 @@ import { backend } from '@/lib/backend';
 import { gameStorage, gameStore, useGame } from '@/lib/game-store';
 import { setMuted } from '@/lib/sound';
 import { buttonClasses, IconButton } from '../ui/button';
+import { FullscreenButton } from '../ui/fullscreen-button';
 import { Logo } from '../ui/logo';
 import { GameSummary } from './game-summary';
 import { TurnIntro } from './turn-intro';
@@ -72,7 +73,8 @@ function GameView({ game }: { game: GameState }) {
   };
 
   return (
-    <div className="flex min-h-dvh flex-col">
+    // In full screen the page reaches under a phone's camera cutout; the inset keeps the header clear of it.
+    <div className="flex min-h-dvh flex-col pt-[env(safe-area-inset-top)]">
       <header className="mx-auto flex h-14 w-full max-w-xl items-center justify-between px-4">
         <Link href="/" aria-label="Ana sayfa (oyun kayıtlı kalır)">
           <Logo />
@@ -84,6 +86,7 @@ function GameView({ game }: { game: GameState }) {
           <IconButton label={muted ? 'Sesi aç' : 'Sesi kapat'} onClick={toggleSound}>
             {muted ? <VolumeX className="size-5" /> : <Volume2 className="size-5" />}
           </IconButton>
+          <FullscreenButton />
           {phase.name !== 'finished' && (
             <IconButton label="Oyunu bitir" onClick={endGame}>
               <Flag className="size-5" />

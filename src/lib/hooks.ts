@@ -58,6 +58,36 @@ export function useNow(intervalMs: number, active: boolean): number {
   return now;
 }
 
+const subscribeFullscreen = (onChange: () => void) => {
+  document.addEventListener('fullscreenchange', onChange);
+  return () => document.removeEventListener('fullscreenchange', onChange);
+};
+
+function toggleFullscreen(): void {
+  const change = document.fullscreenElement
+    ? document.exitFullscreen()
+    : document.documentElement.requestFullscreen({ navigationUI: 'hide' });
+  change.catch(() => undefined);
+}
+
+/**
+ * Full screen for the whole page. Not `supported` before hydration or where browsers allow it only for videos
+ * (Safari on iPhone). `active` follows every way out too (Esc, the back gesture).
+ */
+export function useFullscreen() {
+  const supported = useSyncExternalStore(
+    subscribeNothing,
+    () => document.fullscreenEnabled === true,
+    () => false,
+  );
+  const active = useSyncExternalStore(
+    subscribeFullscreen,
+    () => Boolean(document.fullscreenElement),
+    () => false,
+  );
+  return { supported, active, toggle: toggleFullscreen };
+}
+
 /** Keeps the screen awake while `active` (needs a secure context; silently skipped otherwise). */
 export function useWakeLock(active: boolean): void {
   useEffect(() => {

@@ -6,7 +6,7 @@
 
 945 hazır kelime · 30 kategori · birikimli 3 zorluk seviyesi · telefonda oynamaya uygun arayüz
 
-### [Tarayıcıda aç: fignupafya.github.io/tabu](https://fignupafya.github.io/tabu/)
+### [Tarayıcıda aç](https://fignupafya.github.io/tabu/)
 
 Kurulum gerekmez; bilgisayarda da telefonda da çalışır.
 
@@ -33,7 +33,8 @@ Kurulum gerekmez; bilgisayarda da telefonda da çalışır.
 - **Kaldığın yerden devam:** Oyun tarayıcıda kayıtlı kalır. Oyun ortasında sayfa kapanır, telefon kilitlenir
   ya da başka uygulamaya geçersen sıra otomatik duraklar; döndüğünde kalan süreyle devam edersin.
 - **Kelime yönetimi:** Arayüzden kelime ekle/düzenle/sil, JSON dosyası içe/dışa aktar, komut satırı aracı.
-- **Telefona uygun:** Büyük butonlar, ekranın kararmaması (https'te), ses efektleri ve titreşim, klavye kısayolları.
+- **Telefona uygun:** Büyük butonlar, tam ekran, ekranın kararmaması (https'te), ses efektleri ve titreşim,
+  klavye kısayolları.
 - **İki çalışma şekli:** Sunucusuz statik site olarak (GitHub Pages) ya da kendi bilgisayarında/sunucunda.
   Ayrıntılar aşağıda, [Tarayıcı sürümü ve kendi sunucun](#tarayıcı-sürümü-ve-kendi-sunucun) bölümünde.
 
@@ -74,8 +75,8 @@ Tarayıcı sürümünde:
 
 ## Kurulum ve açma
 
-Tarayıcı sürümü için kurulum gerekmez, [fignupafya.github.io/tabu](https://fignupafya.github.io/tabu/)
-adresini açman yeterli. Kendi bilgisayarında çalıştırmak için kısaca (Node.js kuruluysa):
+Tarayıcı sürümü için kurulum gerekmez, [tarayıcıda açman](https://fignupafya.github.io/tabu/) yeterli.
+Kendi bilgisayarında çalıştırmak için kısaca (Node.js kuruluysa):
 
 ```bash
 git clone https://github.com/fignupafya/tabu.git
@@ -307,4 +308,6 @@ alınır; elle derlerken `PAGES_BASE_PATH=/tabu npm run build:static` kullan.
   Vercel gibi sunucusuz ortamlarda eklenen kelimeler kalıcı olmaz. Orada ya tarayıcı sürümünü yayınla
   (herkesin değişiklikleri kendi cihazında kalır) ya da bir veritabanı adaptörü yaz.
 - Ekranın kararmasını engelleme özelliği tarayıcılarda sadece güvenli bağlantıda (https ya da localhost) çalışır.
+- Tam ekran düğmesi iPhone'da görünmez: Safari, iPhone'da sayfaların tam ekran açılmasına izin vermiyor.
+  Android'de, iPad'de ve bilgisayarda çalışır.
 - Tailwind CSS 4 kullanıldığı için modern tarayıcı gerekir (iOS 16.4+, Chrome 111+).
