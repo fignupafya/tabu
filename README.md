@@ -6,7 +6,9 @@
 
 945 hazır kelime · 30 kategori · birikimli 3 zorluk seviyesi · telefonda oynamaya uygun arayüz
 
-**Tarayıcıda aç:** [fignupafya.github.io/tabu](https://fignupafya.github.io/tabu/) (kurulum gerekmez)
+### [Tarayıcıda aç: fignupafya.github.io/tabu](https://fignupafya.github.io/tabu/)
+
+Kurulum gerekmez; bilgisayarda da telefonda da çalışır.
 
 <img src="docs/screenshots/card.png" width="250" alt="Oyun kartı: anlatılacak kelime ve yasaklı kelimeler">&nbsp;
 <img src="docs/screenshots/review.png" width="250" alt="Sıra özeti: kartların sonucu düzeltilebilir">&nbsp;
@@ -72,7 +74,8 @@ Tarayıcı sürümünde:
 
 ## Kurulum ve açma
 
-Tarayıcı sürümü için kurulum gerekmez. Kendi bilgisayarında çalıştırmak için kısaca (Node.js kuruluysa):
+Tarayıcı sürümü için kurulum gerekmez, [fignupafya.github.io/tabu](https://fignupafya.github.io/tabu/)
+adresini açman yeterli. Kendi bilgisayarında çalıştırmak için kısaca (Node.js kuruluysa):
 
 ```bash
 git clone https://github.com/fignupafya/tabu.git
