@@ -35,7 +35,15 @@ const SECONDS_BETWEEN_TURNS = 25;
 function defaultSetup(): GameSetup {
   return {
     teams: DEFAULT_TEAM_NAMES.slice(0, 2).map((name) => ({ name, players: ['', ''] })),
-    settings: { turnSeconds: 60, rounds: 4, passLimit: 3, difficulty: 'medium', tags: [], includePlayed: false },
+    settings: {
+      turnSeconds: 60,
+      rounds: 4,
+      passLimit: 3,
+      difficulty: 'medium',
+      tags: [],
+      includePlayed: false,
+      recordPlayed: true,
+    },
   };
 }
 
@@ -56,6 +64,8 @@ function restoreSetup(saved: GameSetup | null, knownTags: Set<string>): GameSetu
       difficulty: isDifficultyLevel(settings.difficulty) ? settings.difficulty : fallback.settings.difficulty,
       tags: Array.isArray(settings.tags) ? settings.tags.filter((tag) => knownTags.has(tag)) : [],
       includePlayed: settings.includePlayed === true,
+      // "Don't record" is meant for one game (a trial or guest round), so it isn't carried over.
+      recordPlayed: true,
     },
   };
 }
@@ -266,27 +276,30 @@ function SetupForm({ deck }: { deck: DeckInfo }) {
           </p>
         )}
 
-        <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
-          <input
-            type="checkbox"
+        <div className="mt-4 divide-y divide-slate-100 rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 dark:divide-slate-800 dark:bg-slate-900 dark:ring-slate-800">
+          <CheckboxRow
+            title="Daha önce çıkan kelimeleri de dahil et"
             checked={settings.includePlayed}
-            onChange={(event) => updateSettings({ includePlayed: event.target.checked })}
-            className="mt-0.5 size-5 shrink-0 accent-violet-600"
-          />
-          <span className="text-sm">
-            <span className="block font-bold">Daha önce çıkan kelimeleri de dahil et</span>
-            <span className="mt-0.5 block text-slate-500 dark:text-slate-400">
-              {playedTotal === 0
-                ? 'Henüz çıkan kelime yok; oynadıkça çıkan kelimeler kaydedilir ve yeni oyunlarda tekrar gelmez.'
-                : settings.includePlayed
-                  ? `Önceki oyunlarda çıkan ${playedTotal} kelime de desteye girer.`
-                  : `Önceki oyunlarda çıkan ${playedTotal} kelime desteye alınmaz.`}{' '}
-              <Link href="/played" className="font-bold text-violet-600 hover:underline dark:text-violet-400">
-                Çıkan kelimeler
-              </Link>
-            </span>
-          </span>
-        </label>
+            onChange={(includePlayed) => updateSettings({ includePlayed })}
+          >
+            {playedTotal === 0
+              ? 'Henüz çıkan kelime yok; oynadıkça çıkan kelimeler kaydedilir ve yeni oyunlarda tekrar gelmez.'
+              : settings.includePlayed
+                ? `Önceki oyunlarda çıkan ${playedTotal} kelime de desteye girer.`
+                : `Önceki oyunlarda çıkan ${playedTotal} kelime desteye alınmaz.`}{' '}
+            <Link href="/played" className="font-bold text-violet-600 hover:underline dark:text-violet-400">
+              Çıkan kelimeler
+            </Link>
+          </CheckboxRow>
+          <CheckboxRow
+            title="Bu oyunda çıkan kelimeleri kaydetme"
+            checked={!settings.recordPlayed}
+            onChange={(skip) => updateSettings({ recordPlayed: !skip })}
+          >
+            Deneme ya da misafirli oyunlar için: bu oyunda çıkan kelimeler listeye eklenmez, sonraki oyunlarda yine
+            çıkabilir.
+          </CheckboxRow>
+        </div>
       </Section>
 
       <div className="sticky bottom-0 z-10 -mx-4 border-t border-slate-200 bg-slate-50/90 px-4 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-950/90">
@@ -331,5 +344,32 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
       {children}
       {hint && <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400">{hint}</p>}
     </div>
+  );
+}
+
+function CheckboxRow({
+  title,
+  checked,
+  onChange,
+  children,
+}: {
+  title: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  children: ReactNode;
+}) {
+  return (
+    <label className="flex cursor-pointer items-start gap-3 p-4">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+        className="mt-0.5 size-5 shrink-0 accent-violet-600"
+      />
+      <span className="text-sm">
+        <span className="block font-bold">{title}</span>
+        <span className="mt-0.5 block text-slate-500 dark:text-slate-400">{children}</span>
+      </span>
+    </label>
   );
 }

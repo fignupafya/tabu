@@ -12,7 +12,15 @@ const setup: GameSetup = {
     { name: 'Kırmızı', players: ['Ali', 'Ayşe'] },
     { name: 'Mavi', players: ['Bora', 'Banu', ''] },
   ],
-  settings: { turnSeconds: 60, rounds: 2, passLimit: 1, difficulty: 'medium', tags: [], includePlayed: false },
+  settings: {
+    turnSeconds: 60,
+    rounds: 2,
+    passLimit: 1,
+    difficulty: 'medium',
+    tags: [],
+    includePlayed: false,
+    recordPlayed: true,
+  },
 };
 
 const newGame = () => createGame(setup, cards, { id: 'g1', now: 0, seed: 42 });

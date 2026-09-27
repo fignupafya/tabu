@@ -16,7 +16,7 @@ export interface JsonFileCodec<T> {
  * Needs a writable file system: fine locally or on a VPS, not on serverless hosts.
  */
 export class JsonFile<T> {
-  private cache: { mtimeMs: number; value: T } | null = null;
+  private cache: { version: string; value: T } | null = null;
   private queue: Promise<unknown> = Promise.resolve();
 
   constructor(
@@ -31,10 +31,13 @@ export class JsonFile<T> {
       throw error;
     });
     if (!stat) return this.codec.empty();
-    if (this.cache?.mtimeMs === stat.mtimeMs) return this.cache.value;
+    // Timestamps alone miss quick successive writes (Windows updates them in ~16 ms steps);
+    // the size and the file id (new after every atomic replace) catch those.
+    const version = `${stat.mtimeMs}:${stat.size}:${stat.ino}`;
+    if (this.cache?.version === version) return this.cache.value;
 
     const value = this.codec.parse(await fs.readFile(this.filePath, 'utf8'));
-    this.cache = { mtimeMs: stat.mtimeMs, value };
+    this.cache = { version, value };
     return value;
   }
 

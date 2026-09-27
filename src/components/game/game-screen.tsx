@@ -41,6 +41,8 @@ export function GameScreen() {
  */
 function useReportPlayedWords(game: GameState): void {
   const report = useEffectEvent(() => {
+    // Games saved before this setting existed have no value: they are recorded.
+    if (game.settings.recordPlayed === false) return;
     const ids = [...new Set(game.history.flatMap((turn) => turn.cards.map((card) => card.cardId)))];
     if (ids.length > 0) api.markPlayed(ids).catch(() => undefined);
   });

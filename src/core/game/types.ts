@@ -30,6 +30,8 @@ export interface GameSettings {
   tags: string[];
   /** Whether words that came up in earlier games could be dealt again. */
   includePlayed: boolean;
+  /** Whether this game's words are added to the played list (off for trial or guest games). */
+  recordPlayed: boolean;
 }
 
 export interface PlayedCard {

@@ -56,6 +56,7 @@ export function TurnIntro({ game }: { game: GameState }) {
       <p className="text-center text-xs text-slate-500 dark:text-slate-400">
         {settings.turnSeconds} sn · Pas hakkı: {settings.passLimit ?? 'sınırsız'} ·{' '}
         {DIFFICULTY_LABELS[settings.difficulty].label}
+        {settings.recordPlayed === false && ' · Kelimeler kaydedilmiyor'}
       </p>
     </div>
   );
