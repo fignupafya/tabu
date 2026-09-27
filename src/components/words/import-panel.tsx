@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { MERGE_STRATEGIES, type ImportReport, type MergeStrategy } from '@/core/words/word-import';
-import { ApiError, api } from '@/lib/api-client';
+import { backend, errorMessages } from '@/lib/backend';
 import { cn } from '@/lib/cn';
 import { STRATEGY_LABELS } from '@/lib/labels';
 import { Button } from '../ui/button';
@@ -50,7 +50,7 @@ export function ImportPanel({ onImported, onClose }: { onImported: () => void; o
     setBusy(true);
     setErrors([]);
     try {
-      const report = await api.importWords(data, { strategy, dryRun });
+      const report = await backend.importWords(data, { strategy, dryRun });
       if (dryRun) {
         setPreview(report);
       } else {
@@ -58,7 +58,7 @@ export function ImportPanel({ onImported, onClose }: { onImported: () => void; o
         onImported();
       }
     } catch (error) {
-      setErrors(error instanceof ApiError ? [error.message, ...error.details] : ['İçe aktarılamadı']);
+      setErrors(errorMessages(error, 'İçe aktarılamadı'));
     } finally {
       setBusy(false);
     }

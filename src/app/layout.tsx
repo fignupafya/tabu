@@ -6,7 +6,7 @@ const nunito = Nunito({ subsets: ['latin', 'latin-ext'], variable: '--font-nunit
 
 export const metadata: Metadata = {
   title: { default: 'Tabu', template: '%s · Tabu' },
-  description: 'Kendi kelimelerinle oynayabileceğin, takım ve skor takipli Tabu oyunu.',
+  description: 'Kendi kelimelerinle oynayabileceğin, takım ve skor takipli Türkçe Tabu oyunu.',
 };
 
 export const viewport: Viewport = {

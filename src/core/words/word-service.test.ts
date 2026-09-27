@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { InMemoryPlayedWordRepository } from '../../adapters/words/in-memory-played-word-repository';
+import { memoryStore } from '../../adapters/storage/key-value-store';
 import { InMemoryWordRepository } from '../../adapters/words/in-memory-word-repository';
+import { StoredPlayedWordRepository } from '../../adapters/words/stored-played-word-repository';
 import type { WordEntry } from './word';
 import { WordService, WordServiceError } from './word-service';
 
@@ -15,7 +16,8 @@ const kedi: WordEntry = {
   taboo: { easy: ['miyav', 'fare'], medium: ['tüy'], hard: [] },
 };
 
-const setup = () => new WordService(new InMemoryWordRepository([cay, kedi]), new InMemoryPlayedWordRepository());
+const setup = () =>
+  new WordService(new InMemoryWordRepository([cay, kedi]), new StoredPlayedWordRepository(memoryStore()));
 
 describe('WordService.importWords', () => {
   it('adds new words, skips existing ones by default and reports invalid entries', async () => {

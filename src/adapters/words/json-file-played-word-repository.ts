@@ -1,7 +1,6 @@
+import { isPlayedWord, newestFirst, withPlayed, withoutPlayed } from '../../core/words/played-list';
 import type { PlayedWord, PlayedWordRepository } from '../../core/words/played-word-repository';
 import { JsonFile } from '../json-file';
-
-const newestFirst = (a: PlayedWord, b: PlayedWord) => b.playedAt.localeCompare(a.playedAt);
 
 /**
  * Keeps the words that came up in games in data/played.json:
@@ -20,24 +19,11 @@ export class JsonFilePlayedWordRepository implements PlayedWordRepository {
   }
 
   add(words: PlayedWord[]): Promise<void> {
-    return this.file.update((current) => {
-      const known = new Set(current.map((played) => played.id));
-      const added: PlayedWord[] = [];
-      for (const played of words) {
-        if (known.has(played.id)) continue;
-        known.add(played.id);
-        added.push(played);
-      }
-      return added.length > 0 ? [...current, ...added] : current;
-    });
+    return this.file.update((current) => withPlayed(current, words));
   }
 
   remove(ids: string[]): Promise<void> {
-    const removed = new Set(ids);
-    return this.file.update((current) => {
-      const next = current.filter((played) => !removed.has(played.id));
-      return next.length === current.length ? current : next;
-    });
+    return this.file.update((current) => withoutPlayed(current, ids));
   }
 
   clear(): Promise<void> {
@@ -53,12 +39,8 @@ function parsePlayedFile(text: string): PlayedWord[] {
     throw new Error(`Çıkan kelimeler dosyası okunamadı: ${(error as Error).message}`);
   }
   const entries = (json as { played?: unknown })?.played;
-  if (!Array.isArray(entries)) return [];
   // Skip malformed rows instead of failing: this list is a convenience, not content.
-  return entries.filter(
-    (entry): entry is PlayedWord =>
-      typeof entry?.id === 'string' && typeof entry?.word === 'string' && typeof entry?.playedAt === 'string',
-  );
+  return Array.isArray(entries) ? entries.filter(isPlayedWord) : [];
 }
 
 function serializePlayedFile(played: PlayedWord[]): string {

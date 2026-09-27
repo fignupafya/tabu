@@ -10,7 +10,9 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "words": "tsx scripts/words.ts",
-    "screenshots": "tsx scripts/screenshots.ts"
+    "screenshots": "tsx scripts/screenshots.ts",
+    "build:static": "node scripts/static.mjs build",
+    "dev:static": "node scripts/static.mjs dev"
   },
   "dependencies": {
     "lucide-react": "^1.48.0",

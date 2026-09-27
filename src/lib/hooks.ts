@@ -1,4 +1,4 @@
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 
 const subscribeNothing = () => () => {};
 
@@ -9,6 +9,42 @@ export function useIsClient(): boolean {
     () => true,
     () => false,
   );
+}
+
+/**
+ * Page data rendered by the server (server mode) or loaded in the browser when `initial` is null
+ * (static build). `reload` refreshes it after a change, in both modes. `load` must be a stable function.
+ */
+export function useLoadedData<T>(initial: T | null, load: () => Promise<T>) {
+  const [data, setData] = useState(initial);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchData = useCallback(
+    (isCurrent: () => boolean) =>
+      load().then(
+        (value) => {
+          if (!isCurrent()) return;
+          setData(value);
+          setError(null);
+        },
+        (cause: unknown) => {
+          if (isCurrent()) setError(cause instanceof Error ? cause.message : 'Yüklenemedi');
+        },
+      ),
+    [load],
+  );
+
+  useEffect(() => {
+    if (initial !== null) return;
+    let current = true;
+    void fetchData(() => current);
+    return () => {
+      current = false;
+    };
+  }, [initial, fetchData]);
+
+  const reload = useCallback(() => fetchData(() => true), [fetchData]);
+  return { data, error, reload };
 }
 
 /** Current time, refreshed every `intervalMs` while `active`. */

@@ -4,7 +4,7 @@ import { useState, type FormEvent } from 'react';
 import { DIFFICULTY_LEVELS, type DifficultyLevel } from '@/core/words/difficulty';
 import { WORD_LIMITS, normalizeText, wordId, type TabooByLevel, type WordEntry } from '@/core/words/word';
 import type { TagCount } from '@/core/words/word-query';
-import { ApiError, api } from '@/lib/api-client';
+import { backend, errorMessages } from '@/lib/backend';
 import { DIFFICULTY_LABELS } from '@/lib/labels';
 import { Button } from '../ui/button';
 import { Input, Label, Textarea } from '../ui/input';
@@ -60,11 +60,11 @@ export function WordForm({
     };
     setSaving(true);
     try {
-      if (initial) await api.updateWord(wordId(initial.word), entry);
-      else await api.createWord(entry);
+      if (initial) await backend.updateWord(wordId(initial.word), entry);
+      else await backend.createWord(entry);
       onSaved();
     } catch (error) {
-      setErrors(error instanceof ApiError ? [error.message, ...error.details] : ['Kaydedilemedi']);
+      setErrors(errorMessages(error, 'Kaydedilemedi'));
       setSaving(false);
     }
   }

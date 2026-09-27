@@ -39,7 +39,11 @@ export function parseWordFile(text: string): WordEntry[] {
   } catch (error) {
     throw new WordFileError(`Geçersiz JSON: ${(error as Error).message}`);
   }
+  return parseWordDocument(json);
+}
 
+/** Same as `parseWordFile` for an already parsed document (e.g. the word file bundled into the static build). */
+export function parseWordDocument(json: unknown): WordEntry[] {
   const raw = extractEntries(json);
   if (!raw) throw new WordFileError('Beklenen biçim: { "words": [ ... ] }');
 

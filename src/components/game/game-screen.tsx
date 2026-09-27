@@ -4,7 +4,7 @@ import { Flag, Volume2, VolumeX } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useEffectEvent, useState } from 'react';
 import type { GameState } from '@/core/game/types';
-import { api } from '@/lib/api-client';
+import { backend } from '@/lib/backend';
 import { gameStorage, gameStore, useGame } from '@/lib/game-store';
 import { setMuted } from '@/lib/sound';
 import { buttonClasses, IconButton } from '../ui/button';
@@ -44,7 +44,7 @@ function useReportPlayedWords(game: GameState): void {
     // Games saved before this setting existed have no value: they are recorded.
     if (game.settings.recordPlayed === false) return;
     const ids = [...new Set(game.history.flatMap((turn) => turn.cards.map((card) => card.cardId)))];
-    if (ids.length > 0) api.markPlayed(ids).catch(() => undefined);
+    if (ids.length > 0) backend.markPlayed(ids).catch(() => undefined);
   });
   useEffect(() => report(), [game.id, game.history.length]);
 }

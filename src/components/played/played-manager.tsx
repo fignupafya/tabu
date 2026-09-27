@@ -2,11 +2,12 @@
 
 import { RotateCcw, Search, Trash2 } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useDeferredValue, useMemo, useState } from 'react';
 import type { PlayedWord } from '@/core/words/played-word-repository';
 import { normalizeText } from '@/core/words/word';
-import { ApiError, api } from '@/lib/api-client';
+import { backend, errorMessages } from '@/lib/backend';
+import { STATIC_EXPORT } from '@/lib/deployment';
+import { useLoadedData } from '@/lib/hooks';
 import { Button, buttonClasses } from '../ui/button';
 import { Input } from '../ui/input';
 
@@ -19,8 +20,27 @@ const dateFormat = new Intl.DateTimeFormat('tr-TR', {
   minute: '2-digit',
 });
 
-export function PlayedManager({ played, totalWords }: { played: PlayedWord[]; totalWords: number }) {
-  const router = useRouter();
+interface PlayedData {
+  played: PlayedWord[];
+  totalWords: number;
+}
+
+const loadPlayed = async (): Promise<PlayedData> => {
+  const [played, words] = await Promise.all([backend.listPlayed(), backend.listWords()]);
+  return { played, totalWords: words.length };
+};
+
+/** The played list rendered by the server (server mode) or loaded in the browser (static build). */
+export function PlayedManager({ initial }: { initial: PlayedData | null }) {
+  const { data, error, reload } = useLoadedData(initial, loadPlayed);
+  if (error) {
+    return <p className="rounded-2xl bg-rose-50 p-4 font-semibold text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">{error}</p>;
+  }
+  if (!data) return <p className="text-slate-500 dark:text-slate-400">Yükleniyor…</p>;
+  return <PlayedList played={data.played} totalWords={data.totalWords} onChanged={reload} />;
+}
+
+function PlayedList({ played, totalWords, onChanged }: PlayedData & { onChanged: () => void }) {
   const [search, setSearch] = useState('');
   const [limit, setLimit] = useState(PAGE_SIZE);
   const query = useDeferredValue(search);
@@ -34,14 +54,14 @@ export function PlayedManager({ played, totalWords }: { played: PlayedWord[]; to
   const run = async (action: () => Promise<void>) => {
     try {
       await action();
-      router.refresh();
+      onChanged();
     } catch (error) {
-      window.alert(error instanceof ApiError ? error.message : 'İşlem yapılamadı');
+      window.alert(errorMessages(error, 'İşlem yapılamadı').join('\n'));
     }
   };
   const clearAll = () => {
     if (window.confirm(`Listedeki ${played.length} kelimenin hepsi silinsin mi? Hepsi yeni oyunlarda yeniden çıkabilir.`)) {
-      void run(() => api.clearPlayed());
+      void run(() => backend.clearPlayed());
     }
   };
 
@@ -57,7 +77,7 @@ export function PlayedManager({ played, totalWords }: { played: PlayedWord[]; to
       <p className="mt-4 text-sm leading-relaxed text-slate-600 dark:text-slate-300">
         Oyunlarda çıkan kelimeler burada birikir ve yeni oyunlarda tekrar gelmez. Oyun kurarken{' '}
         <strong>Daha önce çıkan kelimeleri de dahil et</strong> seçilirse ya da bir kelime listeden çıkarılırsa
-        yeniden çıkabilir.
+        yeniden çıkabilir.{STATIC_EXPORT && ' Bu sürümde liste sadece bu tarayıcıda saklanır.'}
       </p>
 
       {played.length === 0 ? (
@@ -101,7 +121,7 @@ export function PlayedManager({ played, totalWords }: { played: PlayedWord[]; to
                     {dateFormat.format(new Date(entry.playedAt))}
                   </time>
                 </div>
-                <Button size="sm" variant="ghost" onClick={() => run(() => api.unmarkPlayed(entry.id))}>
+                <Button size="sm" variant="ghost" onClick={() => run(() => backend.unmarkPlayed(entry.id))}>
                   <RotateCcw className="size-4" /> Listeden çıkar
                 </Button>
               </li>

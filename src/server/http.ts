@@ -5,6 +5,14 @@ import { WordServiceError } from '@/core/words/word-service';
 
 const STATUS: Record<WordServiceError['code'], number> = { invalid: 400, not_found: 404, conflict: 409 };
 
+/**
+ * Context of the `[id]` route handlers. Written out rather than Next's generated `RouteContext<…>`:
+ * the static build leaves route handlers out, so their generated route types don't exist there.
+ */
+export interface IdRouteContext {
+  params: Promise<{ id: string }>;
+}
+
 /** Error body shared by every endpoint: `{ error, details? }`. */
 export function errorResponse(error: unknown): Response {
   if (error instanceof WordServiceError) {

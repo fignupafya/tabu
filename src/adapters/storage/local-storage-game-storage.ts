@@ -1,6 +1,7 @@
 import type { GameStorage, Preferences } from '../../core/game/game-storage';
 import type { GameSetup } from '../../core/game/setup';
 import { GAME_STATE_VERSION, type GameState } from '../../core/game/types';
+import { browserStorage, type KeyValueStore } from './key-value-store';
 
 const KEYS = {
   game: 'tabu:game',
@@ -11,10 +12,12 @@ const KEYS = {
 const DEFAULT_PREFERENCES: Preferences = { muted: false };
 
 /**
- * Browser adapter. Every access is guarded: storage can be missing (server rendering),
- * blocked (private mode) or full — the game then simply isn't persisted.
+ * Browser adapter. Storage can be missing (server rendering), blocked (private mode) or full —
+ * the game then simply isn't persisted.
  */
 export class LocalStorageGameStorage implements GameStorage {
+  constructor(private readonly store: KeyValueStore = browserStorage) {}
+
   loadGame(): GameState | null {
     const game = this.read<GameState>(KEYS.game);
     return game?.version === GAME_STATE_VERSION ? game : null;
@@ -25,11 +28,7 @@ export class LocalStorageGameStorage implements GameStorage {
   }
 
   clearGame(): void {
-    try {
-      this.storage()?.removeItem(KEYS.game);
-    } catch {
-      // ignore: nothing persisted
-    }
+    this.store.remove(KEYS.game);
   }
 
   loadSetup(): GameSetup | null {
@@ -48,17 +47,9 @@ export class LocalStorageGameStorage implements GameStorage {
     this.write(KEYS.preferences, preferences);
   }
 
-  private storage(): Storage | null {
-    try {
-      return typeof window === 'undefined' ? null : window.localStorage;
-    } catch {
-      return null;
-    }
-  }
-
   private read<T>(key: string): T | null {
     try {
-      const raw = this.storage()?.getItem(key);
+      const raw = this.store.get(key);
       return raw ? (JSON.parse(raw) as T) : null;
     } catch {
       return null;
@@ -67,9 +58,9 @@ export class LocalStorageGameStorage implements GameStorage {
 
   private write(key: string, value: unknown): void {
     try {
-      this.storage()?.setItem(key, JSON.stringify(value));
+      this.store.set(key, JSON.stringify(value));
     } catch {
-      // quota exceeded or storage blocked: keep playing in memory
+      // storage full or blocked: keep playing in memory
     }
   }
 }

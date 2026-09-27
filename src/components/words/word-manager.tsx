@@ -1,15 +1,17 @@
 'use client';
 
-import { Download, FileUp, Pencil, Plus, Search, Trash2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { Download, FileUp, Pencil, Plus, RotateCcw, Search, Trash2 } from 'lucide-react';
 import { useDeferredValue, useMemo, useState } from 'react';
 import { DIFFICULTY_LEVELS } from '@/core/words/difficulty';
 import { wordId, type WordEntry } from '@/core/words/word';
 import { matchesQuery, type TagCount } from '@/core/words/word-query';
-import { ApiError, api } from '@/lib/api-client';
+import { backend, errorMessages } from '@/lib/backend';
 import { cn } from '@/lib/cn';
+import { STATIC_EXPORT } from '@/lib/deployment';
+import { downloadTextFile } from '@/lib/download';
+import { useLoadedData } from '@/lib/hooks';
 import { DIFFICULTY_LABELS, LEVEL_STYLES } from '@/lib/labels';
-import { Button, IconButton, buttonClasses } from '../ui/button';
+import { Button, IconButton } from '../ui/button';
 import { Input } from '../ui/input';
 import { Modal } from '../ui/modal';
 import { TagChip } from '../ui/tag-chip';
@@ -20,8 +22,27 @@ const PAGE_SIZE = 60;
 
 type Dialog = { type: 'create' } | { type: 'edit'; entry: WordEntry } | { type: 'import' } | null;
 
-export function WordManager({ words, tags }: { words: WordEntry[]; tags: TagCount[] }) {
-  const router = useRouter();
+interface WordData {
+  words: WordEntry[];
+  tags: TagCount[];
+}
+
+const loadWords = async (): Promise<WordData> => {
+  const [words, tags] = await Promise.all([backend.listWords(), backend.listTags()]);
+  return { words, tags };
+};
+
+/** Words rendered by the server (server mode) or loaded in the browser (static build). */
+export function WordManager({ initial }: { initial: WordData | null }) {
+  const { data, error, reload } = useLoadedData(initial, loadWords);
+  if (error) {
+    return <p className="rounded-2xl bg-rose-50 p-4 font-semibold text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">{error}</p>;
+  }
+  if (!data) return <p className="text-slate-500 dark:text-slate-400">Kelimeler yükleniyor…</p>;
+  return <WordBrowser words={data.words} tags={data.tags} onChanged={reload} />;
+}
+
+function WordBrowser({ words, tags, onChanged }: WordData & { onChanged: () => void }) {
   const [search, setSearch] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [limit, setLimit] = useState(PAGE_SIZE);
@@ -33,7 +54,6 @@ export function WordManager({ words, tags }: { words: WordEntry[]; tags: TagCoun
     [words, query, selectedTags],
   );
 
-  const refresh = () => router.refresh();
   const close = () => setDialog(null);
 
   const toggleTag = (tag: string) => {
@@ -44,11 +64,29 @@ export function WordManager({ words, tags }: { words: WordEntry[]; tags: TagCoun
   const remove = async (entry: WordEntry) => {
     if (!window.confirm(`"${entry.word}" silinsin mi?`)) return;
     try {
-      await api.deleteWord(wordId(entry.word));
-      refresh();
+      await backend.deleteWord(wordId(entry.word));
+      onChanged();
     } catch (error) {
-      window.alert(error instanceof ApiError ? error.message : 'Silinemedi');
+      window.alert(errorMessages(error, 'Silinemedi').join('\n'));
     }
+  };
+
+  const exportWords = async () => {
+    try {
+      const date = new Date().toISOString().slice(0, 10);
+      downloadTextFile(await backend.exportWords(), `tabu-kelimeler-${date}.json`);
+    } catch (error) {
+      window.alert(errorMessages(error, 'Dışa aktarılamadı').join('\n'));
+    }
+  };
+
+  const resetWords = async () => {
+    const confirmed = window.confirm(
+      'Bu cihazda eklenen, düzenlenen ve silinen kelimeler geri alınsın mı? Liste sitedeki haline döner.',
+    );
+    if (!confirmed || !backend.resetWords) return;
+    await backend.resetWords();
+    onChanged();
   };
 
   return (
@@ -67,11 +105,23 @@ export function WordManager({ words, tags }: { words: WordEntry[]; tags: TagCoun
           <Button onClick={() => setDialog({ type: 'import' })}>
             <FileUp className="size-4" /> JSON içe aktar
           </Button>
-          <a href={api.exportUrl} download className={buttonClasses('secondary')}>
+          <Button onClick={exportWords}>
             <Download className="size-4" /> Dışa aktar
-          </a>
+          </Button>
         </div>
       </div>
+
+      {STATIC_EXPORT && (
+        <div className="mt-4 flex flex-col gap-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900 ring-1 ring-amber-200 sm:flex-row sm:items-center sm:justify-between dark:bg-amber-500/10 dark:text-amber-100 dark:ring-amber-500/30">
+          <p>
+            Bu sürümde kelimelerde yaptığın değişiklikler sadece bu tarayıcıda saklanır. Site verilerini temizlersen
+            ya da değişiklikleri sıfırlarsan sitedeki kelime listesine dönülür.
+          </p>
+          <Button size="sm" onClick={resetWords}>
+            <RotateCcw className="size-4" /> Değişiklikleri sıfırla
+          </Button>
+        </div>
+      )}
 
       <div className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 text-xs text-slate-500 dark:text-slate-400">
         <span className="font-bold">Zorluk birikimlidir:</span>
@@ -163,12 +213,12 @@ export function WordManager({ words, tags }: { words: WordEntry[]; tags: TagCoun
           knownTags={tags}
           onSaved={() => {
             close();
-            refresh();
+            onChanged();
           }}
         />
       </Modal>
       <Modal open={dialog?.type === 'import'} onClose={close} title="JSON içe aktar">
-        <ImportPanel onImported={refresh} onClose={close} />
+        <ImportPanel onImported={onChanged} onClose={close} />
       </Modal>
     </>
   );

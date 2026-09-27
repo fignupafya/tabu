@@ -2,9 +2,11 @@
 
 # Tabu
 
-**Kendi kelimelerinle oynayabileceğin, takım ve skor takipli Tabu oyunu.**
+**Kendi kelimelerinle oynayabileceğin, takım ve skor takipli Türkçe Tabu oyunu.**
 
 945 hazır kelime · 30 kategori · birikimli 3 zorluk seviyesi · telefonda oynamaya uygun arayüz
+
+**Tarayıcıda aç:** [fignupafya.github.io/tabu](https://fignupafya.github.io/tabu/) (kurulum gerekmez)
 
 <img src="docs/screenshots/card.png" width="250" alt="Oyun kartı: anlatılacak kelime ve yasaklı kelimeler">&nbsp;
 <img src="docs/screenshots/review.png" width="250" alt="Sıra özeti: kartların sonucu düzeltilebilir">&nbsp;
@@ -22,14 +24,16 @@
   Orta modda 5, Zor modda 7 yasaklı kelime çıkar.
 - **Kategoriler:** Bir kelime birden fazla kategoride olabilir; oyun için istediğin kadar kategori seçebilirsin.
 - **Çıkan kelimeler tekrar gelmez:** Oyunda çıkan her kelime kaydedilir ve sonraki oyunlarda desteye girmez.
-  Oyun kurarken istersen çıkanları da dahil edebilirsin; *Çıkanlar* sayfasında listeyi görür, kelimeleri tek tek
-  geri alır ya da listeyi temizlersin.
+  Oyun kurarken istersen çıkanları da dahil edebilir ya da o oyunun kelimelerini hiç kaydetmeyebilirsin;
+  *Çıkanlar* sayfasında listeyi görür, kelimeleri tek tek geri alır ya da listeyi temizlersin.
 - **Oyun akışı:** Süre, tur sayısı ve pas hakkı ayarlanabilir. Geri al, duraklat, sırayı erken bitir var.
   Süre bitince özet ekranında son saniyede bilinen kartı düzeltebilirsin.
 - **Kaldığın yerden devam:** Oyun tarayıcıda kayıtlı kalır. Oyun ortasında sayfa kapanır, telefon kilitlenir
   ya da başka uygulamaya geçersen sıra otomatik duraklar; döndüğünde kalan süreyle devam edersin.
 - **Kelime yönetimi:** Arayüzden kelime ekle/düzenle/sil, JSON dosyası içe/dışa aktar, komut satırı aracı.
 - **Telefona uygun:** Büyük butonlar, ekranın kararmaması (https'te), ses efektleri ve titreşim, klavye kısayolları.
+- **İki çalışma şekli:** Sunucusuz statik site olarak (GitHub Pages) ya da kendi bilgisayarında/sunucunda.
+  Ayrıntılar aşağıda, [Tarayıcı sürümü ve kendi sunucun](#tarayıcı-sürümü-ve-kendi-sunucun) bölümünde.
 
 ## Ekran görüntüleri
 
@@ -45,9 +49,30 @@
 | --- |
 | <img src="docs/screenshots/played.png" width="640" alt="Oyunlarda çıkan kelimelerin listesi"> |
 
+## Tarayıcı sürümü ve kendi sunucun
+
+Oyun iki şekilde çalışır; oynanış ikisinde de aynıdır, fark kelimelerin ve çıkan kelimeler listesinin nerede
+saklandığındadır.
+
+| | Tarayıcı sürümü (GitHub Pages) | Kendi bilgisayarında (`npm start`) |
+| --- | --- | --- |
+| Açmak için | [Bağlantıya](https://fignupafya.github.io/tabu/) tıkla | Node.js ile kur ve başlat (aşağıda) |
+| Kelimeler | Repodaki kelimeler + bu cihazda yaptığın değişiklikler | `data/words.json` dosyası |
+| Çıkan kelimeler | Bu cihazın tarayıcısında | `data/played.json` dosyası |
+| Başka cihazlar | Her cihazın kendi listesi olur | Aynı ağdaki bütün cihazlar aynı listeyi görür |
+
+Tarayıcı sürümünde:
+
+- Kelime ekleme, düzenleme, silme ve içe aktarma çalışır ama sadece o tarayıcıya kaydedilir
+  (`localStorage`). Repodaki kelimeler temel olarak kalır; senin değişikliklerin onların üstüne uygulanır.
+- *Kelimeler → Değişiklikleri sıfırla* ya da tarayıcının site verilerini silmek listeyi repodaki hâline döndürür.
+  Değişikliklerini saklamak ya da başka cihaza taşımak için *Dışa aktar* ile JSON dosyası alıp diğer tarafta
+  *JSON içe aktar* yapabilirsin.
+- Repoya yeni kelime eklendiğinde site güncellenir ve yeni kelimeler senin değişikliklerinle birlikte görünür.
+
 ## Kurulum ve açma
 
-Kısaca (Node.js kuruluysa):
+Tarayıcı sürümü için kurulum gerekmez. Kendi bilgisayarında çalıştırmak için kısaca (Node.js kuruluysa):
 
 ```bash
 git clone https://github.com/fignupafya/tabu.git
@@ -184,9 +209,11 @@ Kelimeler [`data/words.json`](data/words.json) dosyasında durur:
 
 - Bir sıra onaylandığında o sırada ekrana gelen bütün kartlar (doğru, tabu, pas ve süre bittiğinde ekranda kalan)
   çıkmış sayılır ve `data/played.json` dosyasına kaydedilir. Kayıt sunucuda tutulur; telefonda oynayıp listeye
-  bilgisayardan bakabilirsin.
+  bilgisayardan bakabilirsin. Tarayıcı sürümünde liste o cihazın tarayıcısında durur.
 - Yeni oyun kurarken **Daha önce çıkan kelimeleri de dahil et** seçili değilse bu kelimeler desteye girmez;
   kurulum ekranındaki kelime sayısı buna göre hesaplanır.
+- **Bu oyunda çıkan kelimeleri kaydetme** seçilirse o oyunun kelimeleri listeye yazılmaz (deneme ya da misafir
+  oyunları için). Seçim sadece o oyun için geçerlidir; bir sonraki kurulumda kayıt yine açık gelir.
 - *Çıkanlar* sayfasında listeyi görür, arar, bir kelimeyi **Listeden çıkar** ile tekrar oyuna katar ya da
   **Listeyi temizle** ile her şeyi sıfırlarsın. Bir kelimeyi silince listeden de çıkar.
 
@@ -224,16 +251,20 @@ yapı **ports & adapters** (adaptör) tasarımında: oyun kuralları ve kelime i
 src/core/words      kelime modeli, zorluk seviyeleri, doğrulama, WordService,
                     WordRepository ve PlayedWordRepository (portlar)
 src/core/game       saf oyun motoru (gameReducer), puanlama, kurulum, GameStorage (port)
-src/adapters        JSON dosya adaptörleri (kelimeler, çıkan kelimeler), bellek içi adaptörler (testler),
-                    LocalStorageGameStorage, create-repositories.ts (hangi adaptörün kullanılacağı)
+src/adapters        JSON dosya adaptörleri (sunucu), localStorage adaptörleri (tarayıcı sürümü:
+                    repodaki kelimelerin üstüne cihazdaki değişiklikler), create-repositories.ts
 src/server          sunucu tarafı kompozisyon noktası
-src/app/api         REST uç noktaları
+src/app/api         REST uç noktaları (sadece sunucu modunda)
+src/lib/backend     arayüzün kelime işlemleri için tek kapısı: sunucu modunda REST API,
+                    tarayıcı sürümünde tarayıcıda çalışan aynı WordService
 src/app, components arayüz: kurulum, oyun, kelimeler, çıkan kelimeler
-scripts/            kelime aracı (words.ts), README ekran görüntüleri (screenshots.ts)
+scripts/            kelime aracı (words.ts), README ekran görüntüleri (screenshots.ts), statik derleme
 ```
 
 - Oyun motoru saf bir reducer'dır: zaman ve rastgelelik dışarıdan gelir. Bu yüzden kolay test edilir ve
   ileride çok cihazlı oyun için aynen sunucuda çalışabilir.
+- Tarayıcı sürümü aynı kodla derlenir: `NEXT_PUBLIC_STATIC_EXPORT=1` iken Next.js statik dosyalar üretir,
+  API uç noktaları derlemeye girmez ve arayüz, kelime servisini localStorage adaptörleriyle tarayıcıda çalıştırır.
 - **Veritabanına geçmek** için portları uygulayan adaptörler yazıp `src/adapters/create-repositories.ts`
   içine eklemek yeterli; `WORD_STORE` ortam değişkeniyle seçilir. JSON dosyalarının yeri `WORDS_FILE` ve
   `PLAYED_FILE` ile değiştirilebilir.
@@ -247,19 +278,30 @@ scripts/            kelime aracı (words.ts), README ekran görüntüleri (scree
 ## Geliştirme
 
 ```bash
-npm test               # birim testleri (oyun motoru, kelime servisi, JSON adaptörleri, doğrulama)
+npm test               # birim testleri (oyun motoru, kelime servisi, depolama adaptörleri, doğrulama)
 npm run typecheck
 npm run lint
 npm run build
+npm run build:static   # tarayıcı sürümü: out/ klasörüne statik site
+npm run dev:static     # tarayıcı sürümünü geliştirme sunucusunda dene
 npm run screenshots    # README görsellerini yeniden üretir (sunucu açıkken, yüklü Chrome/Edge ile)
 ```
 
 `npm run screenshots` görüntü almak için gerçek bir oyun oynar; o oyunun kelimeleri çıkan kelimelere
 yazılmasın diye sunucuyu geçici bir dosyayla başlat (ör. `PLAYED_FILE=/tmp/played.json npm start`).
 
+### GitHub Pages'e otomatik yayın
+
+`main` dalına her push'ta [`.github/workflows/pages.yml`](.github/workflows/pages.yml) testleri ve kelime
+kontrolünü çalıştırır, tarayıcı sürümünü derler ve GitHub Pages'e yükler (herkese açık repolarda ücretsiz).
+Fork'ladıysan bir kere **Settings → Pages → Source: GitHub Actions** seçmen yeterli; site
+`https://<kullanıcı-adın>.github.io/<repo-adı>/` adresinde açılır. Alt yol (`/tabu`) derlemede repo adından
+alınır; elle derlerken `PAGES_BASE_PATH=/tabu npm run build:static` kullan.
+
 ## Bilinmesi gerekenler
 
 - JSON dosya deposu yazılabilir disk ister. Kendi bilgisayarında ya da bir sunucuda sorunsuz çalışır;
-  Vercel gibi sunucusuz ortamlarda eklenen kelimeler kalıcı olmaz, orada bir veritabanı adaptörü gerekir.
+  Vercel gibi sunucusuz ortamlarda eklenen kelimeler kalıcı olmaz. Orada ya tarayıcı sürümünü yayınla
+  (herkesin değişiklikleri kendi cihazında kalır) ya da bir veritabanı adaptörü yaz.
 - Ekranın kararmasını engelleme özelliği tarayıcılarda sadece güvenli bağlantıda (https ya da localhost) çalışır.
 - Tailwind CSS 4 kullanıldığı için modern tarayıcı gerekir (iOS 16.4+, Chrome 111+).

@@ -6,25 +6,17 @@ import { useRouter } from 'next/navigation';
 import { useMemo, useState, type ReactNode } from 'react';
 import { SETUP_LIMITS, createGame, validateSetup, type GameSetup, type TeamSetup } from '@/core/game/setup';
 import type { GameSettings } from '@/core/game/types';
-import { DIFFICULTY_LEVELS, isDifficultyLevel, type DifficultyLevel } from '@/core/words/difficulty';
-import type { TagCount } from '@/core/words/word-query';
-import { api } from '@/lib/api-client';
+import { DIFFICULTY_LEVELS, isDifficultyLevel } from '@/core/words/difficulty';
+import { backend } from '@/lib/backend';
+import { buildDeckInfo, type DeckInfo } from '@/lib/deck-info';
 import { gameStorage, gameStore } from '@/lib/game-store';
-import { useIsClient } from '@/lib/hooks';
+import { useIsClient, useLoadedData } from '@/lib/hooks';
 import { DIFFICULTY_LABELS } from '@/lib/labels';
 import { DEFAULT_TEAM_NAMES } from '@/lib/team-colors';
-import { Button, IconButton } from '../ui/button';
+import { Button, IconButton, buttonClasses } from '../ui/button';
 import { Segmented } from '../ui/segmented';
 import { TagChip } from '../ui/tag-chip';
 import { TeamCard } from './team-card';
-
-export interface DeckInfo {
-  tags: TagCount[];
-  /** Every word's tags and whether it already came up, to size the deck for any selection. */
-  words: { tags: string[]; played: boolean }[];
-  /** Average number of taboo words per card at each level. */
-  tabooAverages: Record<DifficultyLevel, number>;
-}
 
 const TURN_SECONDS = [30, 45, 60, 90, 120];
 const PASS_LIMITS: (number | null)[] = [0, 1, 2, 3, 5, null];
@@ -73,11 +65,34 @@ function restoreSetup(saved: GameSetup | null, knownTags: Set<string>): GameSetu
 const randomId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 const randomSeed = () => Math.floor(Math.random() * 2 ** 31);
 
-/** The form reads the last setup from localStorage, so it only renders in the browser. */
-export function GameSetupPanel({ deck }: { deck: DeckInfo }) {
+const loadDeckInfo = async () => {
+  const [words, played] = await Promise.all([backend.listWords(), backend.listPlayed()]);
+  return buildDeckInfo(words, played);
+};
+
+/**
+ * The form reads the last setup from localStorage, so it only renders in the browser. The word summary comes
+ * from the server (server mode) or is loaded here (static build).
+ */
+export function GameSetupPanel({ initialDeck }: { initialDeck: DeckInfo | null }) {
   const isClient = useIsClient();
-  if (!isClient) {
+  const { data: deck, error } = useLoadedData(initialDeck, loadDeckInfo);
+
+  if (error) {
+    return <p className="rounded-2xl bg-rose-50 p-4 font-semibold text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">{error}</p>;
+  }
+  if (!isClient || !deck) {
     return <div className="h-[36rem] animate-pulse rounded-2xl bg-slate-200/60 dark:bg-slate-800/60" />;
+  }
+  if (deck.words.length === 0) {
+    return (
+      <div className="rounded-2xl bg-white p-8 text-center shadow-sm ring-1 ring-slate-200 dark:bg-slate-900 dark:ring-slate-800">
+        <p className="text-lg font-bold">Henüz hiç kelime yok.</p>
+        <Link href="/words" className={buttonClasses('primary', 'md', 'mt-4')}>
+          Kelime ekle
+        </Link>
+      </div>
+    );
   }
   return <SetupForm deck={deck} />;
 }
@@ -142,7 +157,7 @@ function SetupForm({ deck }: { deck: DeckInfo }) {
 
     setStarting(true);
     try {
-      const cards = await api.deck({
+      const cards = await backend.deck({
         difficulty: settings.difficulty,
         tags: settings.tags,
         includePlayed: settings.includePlayed,
