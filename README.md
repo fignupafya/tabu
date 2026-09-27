@@ -38,20 +38,100 @@
 | --- | --- |
 | <img src="docs/screenshots/words.png" alt="Kelime listesi, arama ve kategori filtresi"> | <img src="docs/screenshots/import.png" alt="İçe aktarma önizlemesi"> |
 
-## Hızlı başlangıç
+## Kurulum ve açma
 
-Gereken: [Node.js](https://nodejs.org) 20.9 veya üstü.
+Kısaca (Node.js kuruluysa):
 
 ```bash
 git clone https://github.com/fignupafya/tabu.git
 cd tabu
 npm install
-npm run dev
+npm run build
+npm start
 ```
 
-Tarayıcıda http://localhost:3000 adresini aç. Aynı Wi-Fi'deki telefonlardan oynamak için terminalin yazdığı
-**Network** adresini kullan (ör. `http://192.168.1.40:3000`). Daha hızlı ve hafif çalışması için
-`npm run build && npm start` ile production modunda da açabilirsin.
+Sonra tarayıcıda http://localhost:3000 adresini aç. Adım adım anlatım:
+
+### 1. Node.js'i kur (bir kere)
+
+Oyunu çalıştırmak için bilgisayarda [Node.js](https://nodejs.org) 20.9 veya üstü gerekir. Terminale `node -v`
+yazıp kontrol et; `v20.9.0` ya da daha yüksek bir sürüm görmelisin. Yoksa nodejs.org'dan **LTS** sürümünü indirip
+kur, ardından terminali kapatıp yeniden aç.
+
+> **Terminal nerede?** Windows'ta Başlat menüsünde "Terminal" ya da "PowerShell", macOS'ta "Terminal" uygulaması.
+
+### 2. Projeyi indir (bir kere)
+
+Git ile:
+
+```bash
+git clone https://github.com/fignupafya/tabu.git
+cd tabu
+```
+
+Git yoksa: bu sayfada **Code → Download ZIP** ile indir, ZIP'i bir klasöre çıkar (klasörün adı `tabu-main` olur)
+ve terminali o klasörde aç. Windows'ta klasörün içinde boş bir yere sağ tıklayıp **Terminalde aç** diyebilirsin.
+
+### 3. Paketleri kur (bir kere)
+
+```bash
+npm install
+```
+
+### 4. Oyunu başlat
+
+Oyun gecesi için önerilen yol (hızlı ve hafif):
+
+```bash
+npm run build
+npm start
+```
+
+`npm run build` sadece ilk seferde ve güncellemeden sonra gerekir; sonraki açılışlarda `npm start` yeterli.
+Kod üzerinde çalışıyorsan bunların yerine `npm run dev` kullan: değişiklikler anında yansır.
+
+Sunucu açılınca terminal şuna benzer bir çıktı verir:
+
+```
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.40:3000
+```
+
+### 5. Tarayıcıda aç
+
+- **Bilgisayardan:** http://localhost:3000
+- **Telefondan:** Telefonu bilgisayarla aynı Wi-Fi'ye bağla ve terminaldeki **Network** adresini
+  (ör. `http://192.168.1.40:3000`) telefonun tarayıcısına yaz.
+- Windows ilk açılışta güvenlik duvarı izni sorarsa **Özel ağlar** için izin ver; yoksa telefon bağlanamaz.
+
+### 6. Kapatma ve tekrar açma
+
+- Kapatmak için terminalde `Ctrl + C`'ye bas ya da terminal penceresini kapat.
+- Tekrar açmak için proje klasöründe `npm start` (ya da `npm run dev`) yeterli; `npm install` bir daha gerekmez.
+- Devam eden oyun telefonun tarayıcısında kayıtlıdır: sunucu kapanıp açılsa da ana sayfadaki **Devam et** ile
+  kaldığın yerden sürer.
+- Oyun sırasında bilgisayar uyku moduna geçmesin; uykudayken telefonlar bağlanamaz.
+
+### 7. Güncelleme
+
+```bash
+git pull
+npm install
+npm run build
+```
+
+Kendi eklediğin kelimeler `data/words.json` dosyasında durur ve `git pull` bu dosyada çakışma verebilir.
+Güncellemeden önce *Kelimeler → Dışa aktar* ile yedek almak en güvenlisi.
+
+### Sorun giderme
+
+| Sorun | Çözüm |
+| --- | --- |
+| `node` ya da `npm` bulunamadı | Node.js'i kur, terminali kapatıp yeniden aç. |
+| `EADDRINUSE: address already in use :::3000` | 3000 portunu başka bir program kullanıyor. Onu kapat ya da başka port seç: `npm start -- -p 3001`. (`npm run dev` boş porta kendisi geçer; terminaldeki adresi kullan.) |
+| `Another next dev server is already running` | Bu proje için açık bir `npm run dev` zaten var; o pencereyi kullan ya da kapatıp yeniden başlat. |
+| Telefon siteyi açamıyor | Aynı Wi-Fi'de olduğunu, güvenlik duvarında Node.js'e özel ağ izni verildiğini ve adresin `http://` ile başladığını kontrol et. Misafir Wi-Fi ağları cihazların birbirini görmesini engelleyebilir. |
+| "Kelime dosyası okunamadı" hatası | `data/words.json` elle düzenlenirken bozulmuş olabilir; `npm run words -- check` hatalı satırları gösterir. |
 
 ## Nasıl oynanır?
 
