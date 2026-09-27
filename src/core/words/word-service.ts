@@ -1,0 +1,154 @@
+import type { DifficultyLevel } from './difficulty';
+import { mergeEntries, sameEntry, toCard, wordId, type Card, type WordEntry } from './word';
+import { extractEntries, rawWordOf } from './word-file';
+import type { ImportOptions, ImportReport } from './word-import';
+import type { WordQuery } from './word-query';
+import type { WordRepository } from './word-repository';
+import { parseWordEntry } from './word-schema';
+
+export interface SavedWord {
+  entry: WordEntry;
+  warnings: string[];
+}
+
+export class WordServiceError extends Error {
+  constructor(
+    readonly code: 'invalid' | 'not_found' | 'conflict',
+    message: string,
+    readonly details: string[] = [],
+  ) {
+    super(message);
+    this.name = 'WordServiceError';
+  }
+}
+
+/** Use cases around words. Storage-agnostic: works with any WordRepository adapter. */
+export class WordService {
+  constructor(private readonly repository: WordRepository) {}
+
+  listWords(query?: WordQuery): Promise<WordEntry[]> {
+    return this.repository.list(query);
+  }
+
+  listTags() {
+    return this.repository.tagCounts();
+  }
+
+  async getWord(id: string): Promise<WordEntry> {
+    const entry = (await this.repository.getMany([id])).get(id);
+    if (!entry) throw new WordServiceError('not_found', 'Kelime bulunamadı');
+    return entry;
+  }
+
+  /** Cards for a game: words having any of `tags` (all words when empty), taboo resolved for `difficulty`. */
+  async buildDeck(options: { difficulty: DifficultyLevel; tags?: string[] }): Promise<Card[]> {
+    const entries = await this.repository.list({ tags: options.tags });
+    return entries.map((entry) => toCard(entry, options.difficulty));
+  }
+
+  /**
+   * Imports `{ "words": [...] }` or a bare array. Invalid entries are reported and skipped,
+   * valid ones are applied with `strategy` against existing words (and earlier duplicates in the same input).
+   */
+  async importWords(input: unknown, options: ImportOptions = {}): Promise<ImportReport> {
+    const { strategy = 'skip', dryRun = false } = options;
+    const rawEntries = extractEntries(input);
+    if (!rawEntries) {
+      throw new WordServiceError('invalid', 'Dosya biçimi tanınmadı', [
+        'Beklenen biçim: { "words": [ ... ] } ya da doğrudan bir dizi [ ... ]',
+      ]);
+    }
+
+    const report: ImportReport = {
+      dryRun,
+      strategy,
+      total: rawEntries.length,
+      added: [],
+      updated: [],
+      unchanged: [],
+      skipped: [],
+      invalid: [],
+      warnings: [],
+    };
+
+    const valid: WordEntry[] = [];
+    rawEntries.forEach((raw, index) => {
+      const result = parseWordEntry(raw);
+      if (!result.ok) {
+        report.invalid.push({ index, word: rawWordOf(raw), errors: result.errors });
+        return;
+      }
+      valid.push(result.entry);
+      report.warnings.push(...result.warnings.map((message) => ({ word: result.entry.word, message })));
+    });
+
+    const current = await this.repository.getMany([...new Set(valid.map((entry) => wordId(entry.word)))]);
+    const changed = new Map<string, WordEntry>();
+    const addedIds = new Set<string>();
+
+    for (const entry of valid) {
+      const id = wordId(entry.word);
+      const existing = current.get(id);
+      if (!existing) {
+        current.set(id, entry);
+        changed.set(id, entry);
+        addedIds.add(id);
+        report.added.push(entry.word);
+        continue;
+      }
+      if (strategy === 'skip') {
+        report.skipped.push(entry.word);
+        continue;
+      }
+      const next = strategy === 'merge' ? mergeEntries(existing, entry) : entry;
+      if (sameEntry(existing, next)) {
+        report.unchanged.push(entry.word);
+        continue;
+      }
+      current.set(id, next);
+      changed.set(id, next);
+      if (!addedIds.has(id)) report.updated.push(entry.word);
+    }
+
+    if (!dryRun && changed.size > 0) {
+      await this.repository.saveChanges({ upsert: [...changed.values()] });
+    }
+    return report;
+  }
+
+  async createWord(input: unknown): Promise<SavedWord> {
+    const saved = this.parse(input);
+    const id = wordId(saved.entry.word);
+    if ((await this.repository.getMany([id])).has(id)) {
+      throw new WordServiceError('conflict', `"${saved.entry.word}" zaten var`);
+    }
+    await this.repository.saveChanges({ upsert: [saved.entry] });
+    return saved;
+  }
+
+  /** Replaces the word stored under `id`; renaming is allowed unless the new name is taken. */
+  async updateWord(id: string, input: unknown): Promise<SavedWord> {
+    const saved = this.parse(input);
+    const newId = wordId(saved.entry.word);
+    const found = await this.repository.getMany(newId === id ? [id] : [id, newId]);
+    if (!found.has(id)) throw new WordServiceError('not_found', 'Kelime bulunamadı');
+    if (newId !== id && found.has(newId)) {
+      throw new WordServiceError('conflict', `"${saved.entry.word}" zaten var`);
+    }
+    await this.repository.saveChanges({ remove: newId === id ? [] : [id], upsert: [saved.entry] });
+    return saved;
+  }
+
+  async deleteWord(id: string): Promise<void> {
+    if (!(await this.repository.getMany([id])).has(id)) {
+      throw new WordServiceError('not_found', 'Kelime bulunamadı');
+    }
+    await this.repository.saveChanges({ remove: [id] });
+  }
+
+  private parse(input: unknown): SavedWord {
+    const result = parseWordEntry(input);
+    if (!result.ok) throw new WordServiceError('invalid', 'Kelime geçersiz', result.errors);
+    return { entry: result.entry, warnings: result.warnings };
+  }
+}

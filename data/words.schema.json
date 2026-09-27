@@ -1,0 +1,156 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Tabu kelime dosyası",
+  "oneOf": [
+    {
+      "type": "object",
+      "required": [
+        "words"
+      ],
+      "properties": {
+        "$schema": {
+          "type": "string"
+        },
+        "version": {
+          "type": "integer"
+        },
+        "words": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "word",
+              "taboo"
+            ],
+            "properties": {
+              "word": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 40,
+                "description": "Anlatılacak kelime"
+              },
+              "tags": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "description": "Kategoriler. Bir kelime birden fazla kategoride olabilir."
+              },
+              "taboo": {
+                "description": "Yasaklı kelimeler. Seviyeler birikimlidir: easy ⊂ medium ⊂ hard. Düz dizi verilirse \"easy\" sayılır.",
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "easy"
+                    ],
+                    "properties": {
+                      "easy": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "medium": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      },
+                      "hard": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "minLength": 1
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "word",
+          "taboo"
+        ],
+        "properties": {
+          "word": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40,
+            "description": "Anlatılacak kelime"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Kategoriler. Bir kelime birden fazla kategoride olabilir."
+          },
+          "taboo": {
+            "description": "Yasaklı kelimeler. Seviyeler birikimlidir: easy ⊂ medium ⊂ hard. Düz dizi verilirse \"easy\" sayılır.",
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "easy"
+                ],
+                "properties": {
+                  "easy": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "medium": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "hard": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
